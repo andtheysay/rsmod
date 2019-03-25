@@ -1,5 +1,7 @@
 package gg.rsmod.plugins.content.cmd
 
+import gg.rsmod.game.fs.def.ItemDef
+import gg.rsmod.game.fs.def.VarbitDef
 import gg.rsmod.game.model.bits.INFINITE_VARS_STORAGE
 import gg.rsmod.game.model.bits.InfiniteVarsType
 import gg.rsmod.game.model.priv.Privilege
@@ -104,26 +106,6 @@ on_command("npc", Privilege.ADMIN_POWER) {
         val id = values[0].toInt()
         val npc = Npc(id, player.tile, world)
         world.spawn(npc)
-    }
-}
-
-on_command("anim", Privilege.ADMIN_POWER) {
-    val p = player
-
-    val args = player.getCommandArgs()
-    tryWithUsage(p, args, "Invalid format! Example of proper command <col=801700>::anim 1</col>") { values ->
-        val id = values[0].toInt()
-        p.animate(id)
-    }
-}
-
-on_command("song", Privilege.ADMIN_POWER) {
-    val p = player
-
-    val args = player.getCommandArgs()
-    tryWithUsage(p, args, "Invalid format! Example of proper command <col=801700>::song 1</col>") { values ->
-        val id = values[0].toInt()
-        p.playSong(id)
     }
 }
 
