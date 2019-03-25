@@ -103,6 +103,16 @@ on_command("anim", Privilege.ADMIN_POWER) {
     }
 }
 
+on_command("song", Privilege.ADMIN_POWER) {
+    val p = player
+
+    val args = player.getCommandArgs()
+    tryWithUsage(p, args, "Invalid format! Example of proper command <col=801700>::song 1</col>") { values ->
+        val id = values[0].toInt()
+        p.playSong(id)
+    }
+}
+
 on_command("obj", Privilege.ADMIN_POWER) {
     val p = player
 
