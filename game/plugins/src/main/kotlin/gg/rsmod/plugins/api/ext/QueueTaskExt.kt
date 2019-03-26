@@ -3,7 +3,6 @@ package gg.rsmod.plugins.api.ext
 import gg.rsmod.game.fs.def.ItemDef
 import gg.rsmod.game.fs.def.NpcDef
 import gg.rsmod.game.message.impl.ResumePauseButtonMessage
-import gg.rsmod.game.message.impl.TriggerOnDialogAbortMessage
 import gg.rsmod.game.model.attr.INTERACTING_NPC_ATTR
 import gg.rsmod.game.model.entity.Npc
 import gg.rsmod.game.model.entity.Pawn
@@ -28,24 +27,27 @@ private val closeDialog: ((QueueTask).() -> Unit) = {
  * Invoked when input dialog queues are interrupted.
  */
 private val closeInput: ((QueueTask).() -> Unit) = {
-    player.write(TriggerOnDialogAbortMessage())
+    player.closeInputDialog()
 }
 
 /**
- * Gets the [ctx] as a [Pawn]. If [ctx] is not a [Pawn], a cast exception
- * will be thrown.
+ * Gets the [QueueTask.ctx] as a [Pawn].
+ *
+ * If [QueueTask.ctx] is not a [Pawn], a cast exception will be thrown.
  */
 inline val QueueTask.pawn: Pawn get() = ctx as Pawn
 
 /**
- * Gets the [ctx] as a [Player]. If [ctx] is not a [Player], a cast exception
- * will be thrown.
+ * Gets the [QueueTask.ctx] as a [Player].
+ *
+ * If [QueueTask.ctx] is not a [Pawn], a cast exception will be thrown.
  */
 inline val QueueTask.player: Player get() = ctx as Player
 
 /**
- * Gets the [ctx] as an [Npc]. If [ctx] is not an [Npc], a cast exception
- * will be thrown.
+ * Gets the [QueueTask.ctx] as an [Npc].
+ *
+ * If [QueueTask.ctx] is not a [Pawn], a cast exception will be thrown.
  */
 inline val QueueTask.npc: Npc get() = ctx as Npc
 
@@ -66,7 +68,7 @@ suspend fun QueueTask.options(vararg options: String, title: String = "Select an
     waitReturnValue()
     terminateAction!!(this)
 
-    return requestReturnValue as? Int ?: -1
+    return (requestReturnValue as? ResumePauseButtonMessage)?.slot ?: -1
 }
 
 /**
@@ -267,7 +269,7 @@ suspend fun QueueTask.levelUpMessageBox(skill: Int, levelIncrement: Int) {
         val vowel = initialChar == 'a' || initialChar == 'e' || initialChar == 'i' || initialChar == 'o' || initialChar == 'u'
         val levelFormat = if (levelIncrement == 1) (if (vowel) "an" else "a") else "$levelIncrement"
 
-        player.setComponentText(interfaceId = 233, component = 1, text = "<col=000080>Congratulations, you just advanced $levelFormat $skillName ${"level".plural(levelIncrement)}.")
+        player.setComponentText(interfaceId = 233, component = 1, text = "<col=000080>Congratulations, you just advanced $levelFormat $skillName ${"level".pluralSuffix(levelIncrement)}.")
         player.setComponentText(interfaceId = 233, component = 2, text = "Your $skillName level is now ${player.getSkills().getMaxLevel(skill)}.")
         player.setComponentText(interfaceId = 233, component = 3, text = "Click here to continue")
         player.openInterface(parent = 162, child = CHATBOX_CHILD, interfaceId = 233)
@@ -280,7 +282,7 @@ suspend fun QueueTask.levelUpMessageBox(skill: Int, levelIncrement: Int) {
 
         player.setComponentItem(interfaceId = 193, component = 1, item = 9951, amountOrZoom = 400)
 
-        player.setComponentText(interfaceId = 193, component = 2, text = "<col=000080>Congratulations, you've just advanced $levelFormat Hunter ${"level".plural(levelIncrement)}." +
+        player.setComponentText(interfaceId = 193, component = 2, text = "<col=000080>Congratulations, you've just advanced $levelFormat Hunter ${"level".pluralSuffix(levelIncrement)}." +
                 "<col=000000><br><br>Your Hunter level is now ${player.getSkills().getMaxLevel(skill)}.")
         player.setComponentText(interfaceId = 193, component = 3, text = "Click here to continue")
         player.setComponentText(interfaceId = 193, component = 4, text = "")
@@ -294,7 +296,7 @@ suspend fun QueueTask.levelUpMessageBox(skill: Int, levelIncrement: Int) {
     terminateAction!!(this)
 }
 
-suspend fun QueueTask.produceItemBox(vararg items: Int, title: String = "What would you like to make?", maxItems: Int = player.inventory.capacity, logic: (Int, Int) -> Unit) {
+suspend fun QueueTask.produceItemBox(vararg items: Int, title: String = "What would you like to make?", maxItems: Int = player.inventory.capacity, logic: Player.(Int, Int) -> Unit) {
 
     val defs = player.world.definitions
     val itemDefs = items.map { defs.get(ItemDef::class.java, it) }
@@ -325,5 +327,5 @@ suspend fun QueueTask.produceItemBox(vararg items: Int, title: String = "What wo
     val item = items[child - baseChild]
     val qty = msg.slot
 
-    logic(item, qty)
+    logic(player, item, qty)
 }

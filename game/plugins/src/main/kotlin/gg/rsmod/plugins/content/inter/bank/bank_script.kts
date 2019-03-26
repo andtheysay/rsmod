@@ -13,6 +13,7 @@ on_interface_open(Bank.BANK_INTERFACE_ID) {
 
 on_interface_close(Bank.BANK_INTERFACE_ID) {
     player.closeInterface(dest = InterfaceDestination.TAB_AREA)
+    player.closeInputDialog()
 }
 
 intArrayOf(17, 19).forEachIndexed { index, button ->
@@ -39,9 +40,8 @@ intArrayOf(28, 30, 32, 34, 36).forEach { quantity ->
 }
 
 on_button(interfaceId = Bank.BANK_INTERFACE_ID, component = 42) {
-    val p = player
-    val from = p.inventory
-    val to = p.bank
+    val from = player.inventory
+    val to = player.bank
 
     var any = false
     for (i in 0 until from.capacity) {
@@ -49,7 +49,7 @@ on_button(interfaceId = Bank.BANK_INTERFACE_ID, component = 42) {
 
         val total = item.amount
 
-        val placeholderSlot = to.removePlaceholder(p.world, item)
+        val placeholderSlot = to.removePlaceholder(player.world, item)
         val deposited = from.transfer(to, item, fromSlot = i, toSlot = placeholderSlot, note = false, unnote = true)?.completed ?: 0
         if (total != deposited) {
             // Was not able to deposit the whole stack of [item].
@@ -60,14 +60,13 @@ on_button(interfaceId = Bank.BANK_INTERFACE_ID, component = 42) {
     }
 
     if (!any && !from.isEmpty) {
-        p.message("Bank full.")
+        player.message("Bank full.")
     }
 }
 
 on_button(interfaceId = Bank.BANK_INTERFACE_ID, component = 44) {
-    val p = player
-    val from = p.equipment
-    val to = p.bank
+    val from = player.equipment
+    val to = player.bank
 
     var any = false
     for (i in 0 until from.capacity) {
@@ -75,19 +74,19 @@ on_button(interfaceId = Bank.BANK_INTERFACE_ID, component = 44) {
 
         val total = item.amount
 
-        val placeholderSlot = to.removePlaceholder(p.world, item)
+        val placeholderSlot = to.removePlaceholder(player.world, item)
         val deposited = from.transfer(to, item, fromSlot = i, toSlot = placeholderSlot, note = false, unnote = true)?.completed ?: 0
         if (total != deposited) {
             // Was not able to deposit the whole stack of [item].
         }
         if (deposited > 0) {
             any = true
-            EquipAction.onItemUnequip(p, item.id)
+            EquipAction.onItemUnequip(player, item.id)
         }
     }
 
     if (!any && !from.isEmpty) {
-        p.message("Bank full.")
+        player.message("Bank full.")
     }
 }
 
@@ -135,7 +134,7 @@ on_button(interfaceId = Bank.INV_INTERFACE_ID, component = Bank.INV_INTERFACE_CH
     if (amount == 0) {
         amount = player.inventory.getItemCount(item.id)
     } else if (amount == -1) {
-        this.player.queue {
+        player.queue(TaskPriority.WEAK) {
             amount = inputInt("How many would you like to bank?")
             if (amount > 0) {
                 player.setVarbit(Bank.LAST_X_INPUT, amount)
@@ -214,7 +213,7 @@ on_button(interfaceId = Bank.BANK_INTERFACE_ID, component = 13) p@ {
             player.bank[slot] = null
             return@p
         }
-        this.player.queue {
+        player.queue(TaskPriority.WEAK) {
             amount = inputInt("How many would you like to withdraw?")
             if (amount > 0) {
                 player.setVarbit(Bank.LAST_X_INPUT, amount)
