@@ -97,6 +97,7 @@ suspend fun QueueTask.inputInt(description: String = "Enter amount"): Int {
 suspend fun QueueTask.searchItemInput(message: String): Int {
     player.runClientScript(750, message, 1, -1)
 
+    terminateAction = closeInput
     waitReturnValue()
 
     return requestReturnValue as? Int ?: -1
@@ -297,7 +298,6 @@ suspend fun QueueTask.levelUpMessageBox(skill: Int, levelIncrement: Int) {
 }
 
 suspend fun QueueTask.produceItemBox(vararg items: Int, title: String = "What would you like to make?", maxItems: Int = player.inventory.capacity, logic: Player.(Int, Int) -> Unit) {
-
     val defs = player.world.definitions
     val itemDefs = items.map { defs.get(ItemDef::class.java, it) }
 
@@ -311,6 +311,7 @@ suspend fun QueueTask.produceItemBox(vararg items: Int, title: String = "What wo
         nameArray[it.index] = "|${def.name}"
     }
 
+    player.sendTempVarbit(5983, 1)
     player.openInterface(parent = 162, child = CHATBOX_CHILD, interfaceId = 270)
     player.runClientScript(2046, 0, "$title${nameArray.joinToString("")}", maxItems, *itemArray)
 
