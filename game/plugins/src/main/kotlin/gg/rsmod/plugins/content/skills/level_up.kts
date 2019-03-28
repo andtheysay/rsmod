@@ -19,6 +19,7 @@ set_level_up_logic {
      * Show the level-up chatbox interface.
      */
     player.queue {
+        player.graphic(199)
         levelUpMessageBox(skill, increment)
     }
 }
