@@ -6,17 +6,17 @@ import gg.rsmod.plugins.content.skills.mining.Mining.Rock
 val rocks = ImmutableSet.of(
         Rock(RockType.RUNE_ESSENCE, obj = 7471, depletedOre = 0), // depletedOre NOT AVAILABLE
         Rock(RockType.CLAY, obj = 7454, depletedOre = 7468),
-        Rock(RockType.CLAY, obj = 7487, depletedOre = 7469),
+        Rock(RockType.CLAY, obj = 7487, depletedOre = 7468),
         Rock(RockType.COPPER, obj = 7453, depletedOre = 7468),
-        Rock(RockType.COPPER, obj = 7484, depletedOre = 7469),
+        Rock(RockType.COPPER, obj = 7484, depletedOre = 7468),
         Rock(RockType.TIN, obj = 7485, depletedOre = 7468),
         Rock(RockType.TIN, obj = 7486, depletedOre = 7469),
         Rock(RockType.BLURITE, obj = 7462, depletedOre = 7468),
-        Rock(RockType.BLURITE, obj = 7495, depletedOre = 7469),
+        Rock(RockType.BLURITE, obj = 7495, depletedOre = 7468),
         Rock(RockType.IRON, obj = 7455, depletedOre = 7468),
-        Rock(RockType.IRON, obj = 7488, depletedOre = 7469),
+        Rock(RockType.IRON, obj = 7488, depletedOre = 7468),
         Rock(RockType.SILVER, obj = 7457, depletedOre = 7468),
-        Rock(RockType.SILVER, obj = 7490, depletedOre = 7469),
+        Rock(RockType.SILVER, obj = 7490, depletedOre = 7468),
         Rock(RockType.ELEMENTAL, obj = 7463, depletedOre = 7468),
         Rock(RockType.ELEMENTAL, obj = 7464, depletedOre = 7469),
         Rock(RockType.DAEYAL, obj = 17962, depletedOre = 0), // depletedOre NOT AVAILABLE

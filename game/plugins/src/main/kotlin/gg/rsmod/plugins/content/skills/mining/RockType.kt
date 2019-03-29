@@ -2,9 +2,9 @@ package gg.rsmod.plugins.content.skills.mining
 
 enum class RockType(val level: Int, val xp: Double, val ore: Int, val depleteChance: Int, val respawnTime: IntRange) {
     RUNE_ESSENCE(level = 1, xp = 13.0, ore = 1436, depleteChance = 0, respawnTime = 0..0),
-    CLAY(level = 1, xp = 5.0, ore = 434, depleteChance = 1, respawnTime = 1..1),
-    COPPER(level = 1, xp = 17.5, ore = 436, depleteChance = 0, respawnTime = 15..25),
-    TIN(level = 1, xp = 17.5, ore = 438, depleteChance = 1, respawnTime = 15..25),
+    CLAY(level = 1, xp = 5.0, ore = 434, depleteChance = 1, respawnTime = 3..5),
+    COPPER(level = 1, xp = 17.5, ore = 436, depleteChance = 1, respawnTime = 4..6),
+    TIN(level = 1, xp = 17.5, ore = 438, depleteChance = 1, respawnTime = 5..7),
     BLURITE(level = 11, xp = 17.5, ore = 668, depleteChance = 1, respawnTime = 10..20),
     IRON(level = 16, xp = 35.0, ore = 440, depleteChance = 1, respawnTime = 1..1),
     SILVER(level = 21, xp = 40.0, ore = 442, depleteChance = 1, respawnTime = 1..1),

@@ -38,7 +38,7 @@ object Mining {
             }
 
             if (p.world.random(100) <= (100 - rock.level)) {
-                p.filterableMessage("You get some ${oreName}s.")
+                p.filterableMessage("You get some ${oreName}.")
                 p.inventory.add(rock.ore)
 
                 if (p.world.random(rock.depleteChance) == 0) {
