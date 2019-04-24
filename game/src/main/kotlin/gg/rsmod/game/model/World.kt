@@ -6,20 +6,25 @@ import gg.rsmod.game.GameContext
 import gg.rsmod.game.Server
 import gg.rsmod.game.fs.DefinitionSet
 import gg.rsmod.game.fs.def.ItemDef
+import gg.rsmod.game.fs.def.NpcDef
+import gg.rsmod.game.fs.def.ObjectDef
 import gg.rsmod.game.message.impl.LogoutFullMessage
 import gg.rsmod.game.message.impl.UpdateRebootTimerMessage
 import gg.rsmod.game.model.collision.CollisionManager
 import gg.rsmod.game.model.combat.NpcCombatDef
-import gg.rsmod.game.model.container.key.BANK_KEY
-import gg.rsmod.game.model.container.key.ContainerKey
-import gg.rsmod.game.model.container.key.EQUIPMENT_KEY
-import gg.rsmod.game.model.container.key.INVENTORY_KEY
-import gg.rsmod.game.model.entity.*
+import gg.rsmod.game.model.entity.AreaSound
+import gg.rsmod.game.model.entity.GameObject
+import gg.rsmod.game.model.entity.GroundItem
+import gg.rsmod.game.model.entity.Npc
+import gg.rsmod.game.model.entity.Pawn
+import gg.rsmod.game.model.entity.Player
+import gg.rsmod.game.model.entity.Projectile
 import gg.rsmod.game.model.instance.InstancedMapAllocator
 import gg.rsmod.game.model.priv.PrivilegeSet
 import gg.rsmod.game.model.queue.QueueTask
 import gg.rsmod.game.model.queue.QueueTaskSet
 import gg.rsmod.game.model.queue.TaskPriority
+import gg.rsmod.game.model.queue.impl.WorldQueueTaskSet
 import gg.rsmod.game.model.region.ChunkSet
 import gg.rsmod.game.model.shop.Shop
 import gg.rsmod.game.model.timer.TimerMap
@@ -27,14 +32,10 @@ import gg.rsmod.game.plugin.Plugin
 import gg.rsmod.game.plugin.PluginRepository
 import gg.rsmod.game.service.GameService
 import gg.rsmod.game.service.Service
-import gg.rsmod.game.service.game.EntityExamineService
-import gg.rsmod.game.service.game.NpcStatsService
 import gg.rsmod.game.service.xtea.XteaKeyService
 import gg.rsmod.game.sync.block.UpdateBlockSet
 import gg.rsmod.util.HuffmanCodec
 import gg.rsmod.util.ServerProperties
-import it.unimi.dsi.fastutil.ints.IntOpenHashSet
-import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap
 import it.unimi.dsi.fastutil.objects.ObjectArrayList
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet
 import kotlinx.coroutines.CoroutineDispatcher
@@ -44,7 +45,9 @@ import net.runelite.cache.IndexType
 import net.runelite.cache.fs.Store
 import java.io.File
 import java.security.SecureRandom
-import java.util.*
+import java.util.ArrayList
+import java.util.LinkedHashMap
+import java.util.Random
 import java.util.concurrent.TimeUnit
 
 /**
@@ -53,7 +56,7 @@ import java.util.concurrent.TimeUnit
  *
  * @author Tom <rspsmods@gmail.com>
  */
-class World(val server: Server, val gameContext: GameContext, val devContext: DevContext) {
+class World(val gameContext: GameContext, val devContext: DevContext) {
 
     /**
      * The [Store] is responsible for handling the data in our cache.
@@ -79,13 +82,11 @@ class World(val server: Server, val gameContext: GameContext, val devContext: De
      * A collection of our [Service]s specified in our game [ServerProperties]
      * files.
      */
-    private val services = arrayListOf<Service>()
+    internal val services = mutableListOf<Service>()
 
     lateinit var coroutineDispatcher: CoroutineDispatcher
 
-    internal var queues = QueueTaskSet(headPriority = false)
-
-    internal val registeredContainers = ObjectOpenHashSet<ContainerKey>()
+    internal var queues: QueueTaskSet = WorldQueueTaskSet()
 
     val players = PawnList(arrayOfNulls<Player>(gameContext.playerLimit))
 
@@ -177,31 +178,11 @@ class World(val server: Server, val gameContext: GameContext, val devContext: De
     internal var multiThreadPathFinding = false
 
     /**
-     * If the [plugins] needs to be hot-swapped in the next upcoming cycle.
-     */
-    internal var hotswapPlugins = false
-
-    /**
-     * The available [Shop]s.
-     */
-    val shops = Object2ObjectOpenHashMap<String, Shop>()
-
-    /**
      * World timers.
      *
      * @see TimerMap
      */
     val timers = TimerMap()
-
-    /**
-     * The multi-combat area [gg.rsmod.game.model.region.Chunk]s.
-     */
-    val multiCombatChunks = IntOpenHashSet()
-
-    /**
-     * The multi-combat area region (default 8x8 [gg.rsmod.game.model.region.Chunk]s).
-     */
-    val multiCombatRegions = IntOpenHashSet()
 
     /**
      * A local collection of [GroundItem]s that are currently spawned. We do
@@ -234,10 +215,6 @@ class World(val server: Server, val gameContext: GameContext, val devContext: De
      */
     internal fun postLoad() {
         plugins.executeWorldInit(this)
-
-        arrayOf(INVENTORY_KEY, EQUIPMENT_KEY, BANK_KEY).forEach { key ->
-            registeredContainers.add(key)
-        }
     }
 
     /**
@@ -294,7 +271,7 @@ class World(val server: Server, val gameContext: GameContext, val devContext: De
                  */
                 groundItemRemoval.add(groundItem)
             } else if (!groundItem.isPublic() && groundItem.currentCycle >= gameContext.gItemPublicDelay) {
-                /**
+                /*
                  * If the ground item is not public, but its cycle count has
                  * reached the public delay set by our game, we make it public.
                  */
@@ -338,7 +315,7 @@ class World(val server: Server, val gameContext: GameContext, val devContext: De
         /*
          * Cycle through shops for their resupply ticks.
          */
-        shops.values.forEach { it.cycle(this) }
+        plugins.shops.values.forEach { it.cycle(this) }
 
         /*
          * Cycle through instanced maps.
@@ -385,20 +362,7 @@ class World(val server: Server, val gameContext: GameContext, val devContext: De
     fun spawn(npc: Npc): Boolean {
         val added = npcs.add(npc)
         if (added) {
-            var combatDef: NpcCombatDef? = null
-
-            getService(NpcStatsService::class.java)?.let { statService ->
-                combatDef = statService.get(npc.id)
-            }
-
-            npc.combatDef = combatDef ?: NpcCombatDef.DEFAULT
-            npc.respawns = npc.combatDef.respawnDelay > 0
-            npc.combatDef.bonuses.forEachIndexed { index, bonus -> npc.equipmentBonuses[index] = bonus }
-            npc.setCurrentHp(npc.combatDef.hitpoints)
-
-            /*
-             * Execute npc spawn plugins.
-             */
+            setNpcDefaults(npc)
             plugins.executeNpcSpawn(npc)
         }
         return added
@@ -518,6 +482,12 @@ class World(val server: Server, val gameContext: GameContext, val devContext: De
 
     fun getPlayerForUid(uid: PlayerUID): Player? = players.firstOrNull { it.uid.value == uid.value }
 
+    fun getShop(name: String): Shop? = plugins.shops.getOrDefault(name, null)
+
+    fun getMultiCombatChunks(): Set<Int> = plugins.multiCombatChunks
+
+    fun getMultiCombatRegions(): Set<Int> = plugins.multiCombatRegions
+
     fun random(boundInclusive: Int) = random.nextInt(boundInclusive + 1)
 
     fun random(range: IntRange): Int = random.nextInt(range.endInclusive - range.start + 1) + range.start
@@ -530,14 +500,14 @@ class World(val server: Server, val gameContext: GameContext, val devContext: De
     }
 
     fun percentChance(chance: Double): Boolean {
-        check(chance in 0.0 .. 100.0) { "Chance must be within range of [0.0 - 100.0]" }
+        check(chance in 0.0..100.0) { "Chance must be within range of [0.0 - 100.0]" }
         return random.nextDouble() <= (chance / 100.0)
     }
 
     fun findRandomTileAround(centre: Tile, radius: Int, centreWidth: Int = 0, centreLength: Int = 0): Tile? {
-        val tiles = arrayListOf<Tile>()
-        for (x in -radius .. radius) {
-            for (z in -radius .. radius) {
+        val tiles = mutableListOf<Tile>()
+        for (x in -radius..radius) {
+            for (z in -radius..radius) {
                 if (x in 0 until centreWidth && z in 0 until centreLength) {
                     continue
                 }
@@ -561,22 +531,31 @@ class World(val server: Server, val gameContext: GameContext, val devContext: De
     }
 
     fun sendExamine(p: Player, id: Int, type: ExamineEntityType) {
-        val service = getService(EntityExamineService::class.java)
-        if (service != null) {
-            val examine = when (type) {
-                ExamineEntityType.ITEM -> definitions.get(ItemDef::class.java, id).examine
-                ExamineEntityType.NPC -> service.getNpc(id)
-                ExamineEntityType.OBJECT -> service.getObj(id)
-            }
+        val examine = when (type) {
+            ExamineEntityType.ITEM -> definitions.get(ItemDef::class.java, id).examine
+            ExamineEntityType.NPC -> definitions.get(NpcDef::class.java, id).examine
+            ExamineEntityType.OBJECT -> definitions.get(ObjectDef::class.java, id).examine
+        }
 
-            if (examine != null) {
-                val extension = if (devContext.debugExamines) " ($id)" else ""
-                p.message(examine + extension)
-            } else {
-                logger.warn { "No examine info found for entity [$type, $id]" }
-            }
+        if (examine != null) {
+            val extension = if (devContext.debugExamines) " ($id)" else ""
+            p.message(examine + extension)
         } else {
-            logger.warn("No examine service found! Could not send examine message to player: ${p.username}.")
+            logger.warn { "No examine info found for entity [$type, $id]" }
+        }
+    }
+
+    fun setNpcDefaults(npc: Npc) {
+        val combatDef = plugins.npcCombatDefs.getOrDefault(npc.id, null) ?: NpcCombatDef.DEFAULT
+        npc.combatDef = combatDef
+
+        npc.combatDef.bonuses.forEachIndexed { index, bonus -> npc.equipmentBonuses[index] = bonus }
+        npc.respawns = combatDef.respawnDelay > 0
+
+        npc.setCurrentHp(npc.combatDef.hitpoints)
+        combatDef.stats.forEachIndexed { index, level ->
+            npc.stats.setMaxLevel(index, level)
+            npc.stats.setCurrentLevel(index, level)
         }
     }
 
@@ -587,7 +566,7 @@ class World(val server: Server, val gameContext: GameContext, val devContext: De
      * When [searchSubclasses] is false: the service class must be equal to the [type].
      */
     @Suppress("UNCHECKED_CAST")
-    fun <T: Service> getService(type: Class<out T>, searchSubclasses: Boolean = false): T? {
+    fun <T : Service> getService(type: Class<out T>, searchSubclasses: Boolean = false): T? {
         if (searchSubclasses) {
             return services.firstOrNull { type.isAssignableFrom(it::class.java) } as T?
         }
@@ -644,7 +623,7 @@ class World(val server: Server, val gameContext: GameContext, val devContext: De
         services.forEach { it.bindNet(server, this) }
     }
 
-    companion object: KLogging() {
+    companion object : KLogging() {
 
         /**
          * If the [rebootTimer] is active and is less than this value, we will

@@ -5,15 +5,9 @@ import gg.rsmod.game.model.combat.CombatStyle
 import gg.rsmod.game.model.entity.Npc
 import gg.rsmod.game.model.entity.Pawn
 import gg.rsmod.game.model.entity.Player
-import gg.rsmod.plugins.api.BonusSlot
-import gg.rsmod.plugins.api.EquipmentType
-import gg.rsmod.plugins.api.PrayerIcon
-import gg.rsmod.plugins.api.Skills
+import gg.rsmod.plugins.api.*
 import gg.rsmod.plugins.api.cfg.Items
-import gg.rsmod.plugins.api.ext.getBonus
-import gg.rsmod.plugins.api.ext.getStrengthBonus
-import gg.rsmod.plugins.api.ext.hasEquipped
-import gg.rsmod.plugins.api.ext.hasPrayerIcon
+import gg.rsmod.plugins.api.ext.*
 import gg.rsmod.plugins.content.combat.Combat
 import gg.rsmod.plugins.content.combat.CombatConfigs
 import gg.rsmod.plugins.content.mechanics.prayer.Prayer
@@ -220,19 +214,19 @@ object MeleeCombatFormula : CombatFormula {
     }
 
     private fun getEffectiveStrengthLevel(npc: Npc): Double {
-        var effectiveLevel = npc.combatDef.strengthLvl.toDouble()
+        var effectiveLevel = npc.stats.getCurrentLevel(NpcSkills.STRENGTH).toDouble()
         effectiveLevel += 8
         return effectiveLevel
     }
 
     private fun getEffectiveAttackLevel(npc: Npc): Double {
-        var effectiveLevel = npc.combatDef.attackLvl.toDouble()
+        var effectiveLevel = npc.stats.getCurrentLevel(NpcSkills.ATTACK).toDouble()
         effectiveLevel += 8
         return effectiveLevel
     }
 
     private fun getEffectiveDefenceLevel(npc: Npc): Double {
-        var effectiveLevel = npc.combatDef.defenceLvl.toDouble()
+        var effectiveLevel = npc.stats.getCurrentLevel(NpcSkills.DEFENCE).toDouble()
         effectiveLevel += 8
         return effectiveLevel
     }
@@ -301,35 +295,35 @@ object MeleeCombatFormula : CombatFormula {
     private fun getDamageTakeMultiplier(pawn: Pawn): Double = pawn.attr[Combat.DAMAGE_TAKE_MULTIPLIER] ?: 1.0
 
     private fun isDemon(pawn: Pawn): Boolean {
-        if (pawn.getType().isNpc()) {
-            return (pawn as Npc).combatDef.isDemon()
+        if (pawn.entityType.isNpc()) {
+            return (pawn as Npc).isSpecies(NpcSpecies.DEMON)
         }
         return false
     }
 
     private fun isShade(pawn: Pawn): Boolean {
-        if (pawn.getType().isNpc()) {
-            return (pawn as Npc).combatDef.isShade()
+        if (pawn.entityType.isNpc()) {
+            return (pawn as Npc).isSpecies(NpcSpecies.SHADE)
         }
         return false
     }
 
     private fun isKalphite(pawn: Pawn): Boolean {
-        if (pawn.getType().isNpc()) {
-            return (pawn as Npc).combatDef.isKalphite()
+        if (pawn.entityType.isNpc()) {
+            return (pawn as Npc).isSpecies(NpcSpecies.KALPHITE)
         }
         return false
     }
 
     private fun isScarab(pawn: Pawn): Boolean {
-        if (pawn.getType().isNpc()) {
-            return (pawn as Npc).combatDef.isScarab()
+        if (pawn.entityType.isNpc()) {
+            return (pawn as Npc).isSpecies(NpcSpecies.SCARAB)
         }
         return false
     }
 
     private fun isWearingDharok(pawn: Pawn): Boolean {
-        if (pawn.getType().isPlayer()) {
+        if (pawn.entityType.isPlayer()) {
             val player = pawn as Player
             return player.hasEquipped(EquipmentType.HEAD, Items.DHAROKS_HELM, Items.DHAROKS_HELM_25, Items.DHAROKS_HELM_50, Items.DHAROKS_HELM_75, Items.DHAROKS_HELM_100)
                     && player.hasEquipped(EquipmentType.WEAPON, Items.DHAROKS_GREATAXE, Items.DHAROKS_GREATAXE_25, Items.DHAROKS_GREATAXE_50, Items.DHAROKS_GREATAXE_75, Items.DHAROKS_GREATAXE_100)
@@ -340,7 +334,7 @@ object MeleeCombatFormula : CombatFormula {
     }
 
     private fun isWearingVerac(pawn: Pawn): Boolean {
-        if (pawn.getType().isPlayer()) {
+        if (pawn.entityType.isPlayer()) {
             val player = pawn as Player
             return player.hasEquipped(EquipmentType.HEAD, Items.VERACS_HELM, Items.VERACS_HELM_25, Items.VERACS_HELM_50, Items.VERACS_HELM_75, Items.VERACS_HELM_100)
                     && player.hasEquipped(EquipmentType.WEAPON, Items.VERACS_FLAIL, Items.VERACS_FLAIL_25, Items.VERACS_FLAIL_50, Items.VERACS_FLAIL_75, Items.VERACS_FLAIL_100)

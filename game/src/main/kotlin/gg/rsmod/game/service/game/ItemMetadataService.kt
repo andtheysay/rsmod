@@ -168,14 +168,14 @@ class ItemMetadataService : Service {
         return EquipmentSlots(equipSlot, equipType)
     }
 
-    private data class EquipmentSlots(val slot: Int, val secondary: Int)
-
     private data class Metadata(val id: Int = -1,
                                 val name: String = "",
                                 val examine: String? = null,
                                 val tradeable: Boolean = false,
                                 val weight: Double = 0.0,
                                 val equipment: Equipment? = null)
+
+    private data class EquipmentSlots(val slot: Int, val secondary: Int)
 
     private data class Equipment(@JsonProperty("equip_slot") val equipSlot: String? = null,
                                  @JsonProperty("weapon_type") val weaponType: Int = -1,
@@ -254,10 +254,10 @@ class ItemMetadataService : Service {
             result = 31 * result + (skillReqs?.contentHashCode() ?: 0)
             return result
         }
-
     }
+
     private data class SkillRequirement(@JsonProperty("skill") val skill: String?,
                                         @JsonProperty("level") val level: Int?)
 
-    companion object: KLogging()
+    companion object : KLogging()
 }

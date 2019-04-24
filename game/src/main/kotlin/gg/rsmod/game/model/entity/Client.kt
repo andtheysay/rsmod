@@ -1,5 +1,6 @@
 package gg.rsmod.game.model.entity
 
+import com.google.common.base.MoreObjects
 import gg.rsmod.game.message.Message
 import gg.rsmod.game.model.EntityType
 import gg.rsmod.game.model.World
@@ -65,11 +66,23 @@ class Client(val channel: Channel, world: World) : Player(world) {
      */
     var clientHeight = 503
 
+    /**
+     * The pitch of the camera in the client's game UI.
+     */
     var cameraPitch = 0
 
+    /**
+     * The yaw of the camera in the client's game UI.
+     */
     var cameraYaw = 0
 
-    override fun getType(): EntityType = EntityType.CLIENT
+    /**
+     * A flag which indicates that the client will have their incoming packets
+     * ([gg.rsmod.game.message.Message]s) logged.
+     */
+    var logPackets = false
+
+    override val entityType: EntityType = EntityType.CLIENT
 
     override fun handleLogout() {
         super.handleLogout()
@@ -95,6 +108,12 @@ class Client(val channel: Channel, world: World) : Player(world) {
     override fun channelClose() {
         gameSystem.close()
     }
+
+    override fun toString(): String = MoreObjects.toStringHelper(this)
+            .add("login_username", loginUsername)
+            .add("username", username)
+            .add("channel", channel)
+            .toString()
 
     companion object {
 

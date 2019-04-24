@@ -1,5 +1,8 @@
 package gg.rsmod.game.plugin
 
+import com.google.gson.GsonBuilder
+import gg.rsmod.game.Server
+import gg.rsmod.game.event.Event
 import gg.rsmod.game.fs.def.ItemDef
 import gg.rsmod.game.fs.def.NpcDef
 import gg.rsmod.game.fs.def.ObjectDef
@@ -16,6 +19,9 @@ import gg.rsmod.game.model.shop.Shop
 import gg.rsmod.game.model.shop.ShopCurrency
 import gg.rsmod.game.model.shop.StockType
 import gg.rsmod.game.model.timer.TimerKey
+import gg.rsmod.game.service.Service
+import java.nio.file.Files
+import java.nio.file.Paths
 import kotlin.script.experimental.annotations.KotlinScript
 
 /**
@@ -28,7 +34,56 @@ import kotlin.script.experimental.annotations.KotlinScript
         fileExtension = "kts",
         compilationConfiguration = KotlinPluginConfiguration::class
 )
-abstract class KotlinPlugin(private val r: PluginRepository, val world: World) {
+abstract class KotlinPlugin(private val r: PluginRepository, val world: World, val server: Server) {
+
+    /**
+     * A map of properties that will be copied from the [PluginMetadata] and
+     * exposed to the plugin.
+     */
+    private lateinit var properties: MutableMap<String, Any>
+
+    /**
+     * Get property associated with [key] casted as [T].
+     */
+    @Suppress("UNCHECKED_CAST")
+    fun <T> getProperty(key: String): T? = properties[key] as? T?
+
+    /**
+     * Set the [PluginMetadata] for this plugin.
+     */
+    fun load_metadata(metadata: PluginMetadata) {
+        checkNotNull(metadata.propertyFileName) { "Property file name must be set in order to load metadata." }
+
+        val file = METADATA_PATH.resolve("${metadata.propertyFileName}.json")
+        val gson = GsonBuilder()
+                .setPrettyPrinting()
+                .disableHtmlEscaping()
+                .create()
+
+        if (!Files.exists(file)) {
+            Files.createDirectories(METADATA_PATH)
+            Files.newBufferedWriter(file).use { writer ->
+                gson.toJson(metadata, PluginMetadata::class.java, writer)
+            }
+        }
+
+        Files.newBufferedReader(file).use { reader ->
+            val data = gson.fromJson(reader, PluginMetadata::class.java)
+            if (data.properties.isNotEmpty()) {
+                properties = mutableMapOf()
+                data.properties.forEach { key, value ->
+                    properties[key] = if (value is Double) value.toInt() else value
+                }
+            }
+        }
+    }
+
+    /**
+     * Load [service] on plugin start-up.
+     */
+    fun load_service(service: Service) {
+        r.services.add(service)
+    }
 
     /**
      * Set the [gg.rsmod.game.model.region.ChunkCoords] with [chunk] as its
@@ -126,6 +181,20 @@ abstract class KotlinPlugin(private val r: PluginRepository, val world: World) {
     }
 
     /**
+     * Invoke [logic] when the [option] option is clicked on an equipment
+     * [gg.rsmod.game.model.item.Item].
+     */
+    fun on_equipment_option(item: Int, option: String, logic: (Plugin).() -> Unit) {
+        val opt = option.toLowerCase()
+        val def = world.definitions.get(ItemDef::class.java, item)
+        val slot = def.equipmentMenu.filterNotNull().indexOfFirst { it.toLowerCase() == opt }
+
+        check(slot != -1) { "Option \"$option\" not found for item equipment $item [options=${def.equipmentMenu.filterNotNull().filter { it.isNotBlank() }}]" }
+
+        r.bindEquipmentOption(item, slot + 1, logic)
+    }
+
+    /**
      * Invoke [logic] when the [option] option is clicked on a
      * [gg.rsmod.game.model.entity.GameObject].
      *
@@ -179,8 +248,8 @@ abstract class KotlinPlugin(private val r: PluginRepository, val world: World) {
     /**
      * Invoke [logic] when an [item] is used on a [gg.rsmod.game.model.entity.GameObject]
      *
-     * @param obj   The game object id
-     * @param item  The item id
+     * @param obj the game object id
+     * @param item the item id
      */
     fun on_item_on_obj(obj: Int, item: Int, lineOfSightDistance: Int = -1, logic: (Plugin).() -> Unit) {
         r.bindItemOnObject(obj, item, lineOfSightDistance, logic)
@@ -232,12 +301,18 @@ abstract class KotlinPlugin(private val r: PluginRepository, val world: World) {
     fun on_world_init(logic: (Plugin).() -> Unit) = r.bindWorldInit(logic)
 
     /**
-     * Invoke [logic] on player bait in.
+     * Invoke [logic] when an [Event] is triggered.
+     */
+    @Suppress("UNCHECKED_CAST")
+    fun <T : Event> on_event(event: Class<out T>, logic: Plugin.(T) -> Unit) = r.bindEvent(event, logic as Plugin.(Event) -> Unit)
+
+    /**
+     * Invoke [logic] on player log in.
      */
     fun on_login(logic: (Plugin).() -> Unit) = r.bindLogin(logic)
 
     /**
-     * Invoke [logic] on player bait out.
+     * Invoke [logic] on player log out.
      */
     fun on_logout(logic: (Plugin).() -> Unit) = r.bindLogout(logic)
 
@@ -249,8 +324,7 @@ abstract class KotlinPlugin(private val r: PluginRepository, val world: World) {
     /**
      * Invoked when an item is swapped between two components.
      */
-    fun on_component_to_component_item_swap(srcInterfaceId: Int, srcComponent: Int, dstInterfaceId: Int, dstComponent: Int, plugin: Plugin.() -> Unit)
-            = r.bindComponentToComponentItemSwap(srcInterfaceId, srcComponent, dstInterfaceId, dstComponent, plugin)
+    fun on_component_to_component_item_swap(srcInterfaceId: Int, srcComponent: Int, dstInterfaceId: Int, dstComponent: Int, plugin: Plugin.() -> Unit) = r.bindComponentToComponentItemSwap(srcInterfaceId, srcComponent, dstInterfaceId, dstComponent, plugin)
 
     /**
      * Invokes when a player interaction option is executed
@@ -378,7 +452,7 @@ abstract class KotlinPlugin(private val r: PluginRepository, val world: World) {
     /**
      * Invoke [logic] when the the option in index [option] is clicked on an inventory item.
      *
-     * [on_item_option] method should be used over this method whenever possible.
+     * String option method should be used over this method whenever possible.
      */
     fun on_item_option(item: Int, option: Int, logic: (Plugin).() -> Unit) = r.bindItem(item, option, logic)
 
@@ -386,7 +460,7 @@ abstract class KotlinPlugin(private val r: PluginRepository, val world: World) {
      * Invoke [logic] when the the option in index [option] is clicked on a
      * [gg.rsmod.game.model.entity.GameObject].
      *
-     * [on_obj_option] method should be used over this method whenever possible.
+     * String option method should be used over this method whenever possible.
      *
      * @param lineOfSightDistance
      * If the npc is behind an object such as a prison cell or bank booth, this
@@ -398,20 +472,29 @@ abstract class KotlinPlugin(private val r: PluginRepository, val world: World) {
     /**
      * Invoke [logic] when the the option in index [option] is clicked on an [Npc].
      *
-     * [on_npc_option] method should be used over this method whenever possible.
+     * String option method should be used over this method whenever possible.
      */
     fun on_npc_option(npc: Int, option: Int, lineOfSightDistance: Int = -1, logic: (Plugin).() -> Unit) = r.bindNpc(npc, option, lineOfSightDistance, logic)
 
     /**
      * Invoke [logic] when the the option in index [option] is clicked on a [GroundItem].
      *
-     * [on_ground_item_option] method should be used over this method whenever possible.
+     * String option method should be used over this method whenever possible.
      */
     fun on_ground_item_option(item: Int, option: Int, logic: (Plugin).() -> Unit) = r.bindGroundItem(item, option, logic)
+
+    /**
+     * Invoke [plugin] when a spell is used on an item.
+     */
+    fun on_spell_on_item(fromInterface: Int, fromComponent: Int, toInterface: Int, toComponent: Int, plugin: Plugin.() -> Unit) = r.bindSpellOnItem((fromInterface shl 16) or fromComponent, (toInterface shl 16) or toComponent, plugin)
 
     /**
      * Returns true if the item can be dropped on the floor via the 'drop' menu
      * option - return false otherwise.
      */
     fun can_drop_item(item: Int, plugin: (Plugin).() -> Boolean) = r.bindCanItemDrop(item, plugin)
+
+    companion object {
+        private val METADATA_PATH = Paths.get("./plugins", "configs")
+    }
 }

@@ -5,6 +5,7 @@ import gg.rsmod.game.message.MessageHandler
 import gg.rsmod.game.message.impl.OpObj1Message
 import gg.rsmod.game.model.EntityType
 import gg.rsmod.game.model.Tile
+import gg.rsmod.game.model.World
 import gg.rsmod.game.model.attr.INTERACTING_GROUNDITEM_ATTR
 import gg.rsmod.game.model.attr.INTERACTING_OPT_ATTR
 import gg.rsmod.game.model.entity.Client
@@ -18,8 +19,8 @@ import java.lang.ref.WeakReference
  */
 class OpObj1Handler : MessageHandler<OpObj1Message> {
 
-    override fun handle(client: Client, message: OpObj1Message) {
-        /**
+    override fun handle(client: Client, world: World, message: OpObj1Message) {
+        /*
          * If tile is too far away, don't process it.
          */
         val tile = Tile(message.x, message.z, client.tile.height)
@@ -27,15 +28,19 @@ class OpObj1Handler : MessageHandler<OpObj1Message> {
             return
         }
 
+        if (!client.lock.canGroundItemInteract()) {
+            return
+        }
+
         log(client, "Ground Item action 1: item=%d, x=%d, z=%d, movement=%d", message.item, message.x, message.z, message.movementType)
 
-        /**
+        /*
          * Get the region chunk that the object would belong to.
          */
-        val chunk = client.world.chunks.getOrCreate(tile)
+        val chunk = world.chunks.getOrCreate(tile)
         val item = chunk.getEntities<GroundItem>(tile, EntityType.GROUND_ITEM).firstOrNull { it.item == message.item && it.canBeViewedBy(client) } ?: return
 
-        if (message.movementType == 1 && client.world.privileges.isEligible(client.privilege, Privilege.ADMIN_POWER)) {
+        if (message.movementType == 1 && world.privileges.isEligible(client.privilege, Privilege.ADMIN_POWER)) {
             client.moveTo(item.tile)
         }
 

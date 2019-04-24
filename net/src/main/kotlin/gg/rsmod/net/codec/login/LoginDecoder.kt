@@ -100,9 +100,9 @@ class LoginDecoder(private val serverRevision: Int, private val cacheCrcs: IntAr
             } else {
                 val authType = secureBuf.readByte().toInt()
 
-                if (authType == 0) {
+                if (authType == 1) {
                     authCode = secureBuf.readInt()
-                } else if (authType == 1 || authType == 3) {
+                } else if (authType == 0 || authType == 2) {
                     authCode = secureBuf.readUnsignedMedium()
                     secureBuf.skipBytes(Byte.SIZE_BYTES)
                 } else {
@@ -194,7 +194,7 @@ class LoginDecoder(private val serverRevision: Int, private val cacheCrcs: IntAr
         return Unpooled.wrappedBuffer(Xtea.decipher(xteaKeys, data, 0, data.size))
     }
 
-    companion object: KLogging() {
+    companion object : KLogging() {
         private const val LOGIN_OPCODE = 16
         private const val RECONNECT_OPCODE = 18
     }

@@ -19,7 +19,7 @@ class InstancedMapAllocator {
     /**
      * A list of active [InstancedMap]s.
      */
-    private val maps = arrayListOf<InstancedMap>()
+    private val maps = mutableListOf<InstancedMap>()
 
     /**
      * The current cycles that keep track of how long before our allocated
@@ -41,7 +41,7 @@ class InstancedMapAllocator {
         val area = VALID_AREA
         val step = 64
 
-        /**
+        /*
          * The total amount of tiles that the new [InstancedMap] will occupy.
          */
         val totalTiles = chunks.regionSize * Chunk.REGION_SIZE
@@ -123,7 +123,7 @@ class InstancedMapAllocator {
             for (i in 0 until maps.size) {
                 val map = maps[i]
 
-                /**
+                /*
                  * If there's no players in the [map] area, we can de-allocate
                  * the map.
                  */

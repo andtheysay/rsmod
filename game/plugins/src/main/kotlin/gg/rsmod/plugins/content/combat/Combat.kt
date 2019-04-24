@@ -14,9 +14,18 @@ import gg.rsmod.game.model.queue.QueueTask
 import gg.rsmod.game.model.timer.ACTIVE_COMBAT_TIMER
 import gg.rsmod.game.model.timer.ATTACK_DELAY
 import gg.rsmod.plugins.api.BonusSlot
+import gg.rsmod.plugins.api.NpcSkills
 import gg.rsmod.plugins.api.ProjectileType
+import gg.rsmod.plugins.api.Skills
 import gg.rsmod.plugins.api.WeaponType
-import gg.rsmod.plugins.api.ext.*
+import gg.rsmod.plugins.api.ext.closeInterface
+import gg.rsmod.plugins.api.ext.getAttackBonus
+import gg.rsmod.plugins.api.ext.getAttackStyle
+import gg.rsmod.plugins.api.ext.getBonus
+import gg.rsmod.plugins.api.ext.getStrengthBonus
+import gg.rsmod.plugins.api.ext.getVarbit
+import gg.rsmod.plugins.api.ext.getVarp
+import gg.rsmod.plugins.api.ext.hasWeaponType
 import gg.rsmod.plugins.content.combat.strategy.CombatStrategy
 import gg.rsmod.plugins.content.combat.strategy.MagicCombatStrategy
 import gg.rsmod.plugins.content.combat.strategy.MeleeCombatStrategy
@@ -74,7 +83,10 @@ object Combat {
             return
         }
 
-        if (target.getType().isNpc()) {
+        val blockAnimation = CombatConfigs.getBlockAnimation(target)
+        target.animate(blockAnimation)
+
+        if (target.entityType.isNpc()) {
             if (!target.attr.has(COMBAT_TARGET_FOCUS_ATTR) || target.attr[COMBAT_TARGET_FOCUS_ATTR]!!.get() != pawn) {
                 target.attack(pawn)
             }
@@ -86,8 +98,12 @@ object Combat {
     }
 
     fun getNpcXpMultiplier(npc: Npc): Double {
-        val def = npc.combatDef
-        val averageLvl = Math.floor((def.attackLvl + def.strengthLvl + def.defenceLvl + def.hitpoints) / 4.0)
+        val attackLvl = npc.stats.getMaxLevel(NpcSkills.ATTACK)
+        val strengthLvl = npc.stats.getMaxLevel(NpcSkills.STRENGTH)
+        val defenceLvl = npc.stats.getMaxLevel(NpcSkills.DEFENCE)
+        val hitpoints = npc.getMaxHp()
+
+        val averageLvl = Math.floor((attackLvl + strengthLvl + defenceLvl + hitpoints) / 4.0)
         val averageDefBonus = Math.floor((npc.getBonus(BonusSlot.DEFENCE_STAB) + npc.getBonus(BonusSlot.DEFENCE_SLASH) + npc.getBonus(BonusSlot.DEFENCE_CRUSH)) / 3.0)
         return 1.0 + Math.floor(averageLvl * (averageDefBonus + npc.getStrengthBonus() + npc.getAttackBonus()) / 5120.0) / 40.0
     }
@@ -130,14 +146,16 @@ object Combat {
             return false
         }
 
-        // TODO: maxDistance should be 32 if in 'large' viewport mode
-        val maxDistance = 16
+        val maxDistance = when {
+            pawn is Player && pawn.hasLargeViewport() -> Player.LARGE_VIEW_DISTANCE
+            else -> Player.NORMAL_VIEW_DISTANCE
+        }
         if (!pawn.tile.isWithinRadius(target.tile, maxDistance)) {
             return false
         }
 
-        val pvp = pawn.getType().isPlayer() && target.getType().isPlayer()
-        val pvm = pawn.getType().isPlayer() && target.getType().isNpc()
+        val pvp = pawn.entityType.isPlayer() && target.entityType.isPlayer()
+        val pvm = pawn.entityType.isPlayer() && target.entityType.isNpc()
 
         if (pawn is Player) {
             if (!pawn.isOnline) {
@@ -165,6 +183,10 @@ object Combat {
             }
             if (!target.def.isAttackable() || target.combatDef.hitpoints == -1) {
                 (pawn as? Player)?.message("You can't attack this npc.")
+                return false
+            }
+            if (pawn is Player && target.combatDef.slayerReq > pawn.getSkills().getMaxLevel(Skills.SLAYER)) {
+                pawn.message("You need a higher Slayer level to know how to wound this monster.")
                 return false
             }
         } else if (target is Player) {

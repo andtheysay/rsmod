@@ -3,8 +3,22 @@ package gg.rsmod.game.model.entity
 import com.google.common.base.MoreObjects
 import gg.rsmod.game.fs.def.VarpDef
 import gg.rsmod.game.message.Message
-import gg.rsmod.game.message.impl.*
-import gg.rsmod.game.model.*
+import gg.rsmod.game.message.impl.MessageGameMessage
+import gg.rsmod.game.message.impl.RebuildLoginMessage
+import gg.rsmod.game.message.impl.UpdateInvFullMessage
+import gg.rsmod.game.message.impl.UpdateRebootTimerMessage
+import gg.rsmod.game.message.impl.UpdateRunWeightMessage
+import gg.rsmod.game.message.impl.UpdateStatMessage
+import gg.rsmod.game.message.impl.VarpLargeMessage
+import gg.rsmod.game.message.impl.VarpSmallMessage
+import gg.rsmod.game.model.Appearance
+import gg.rsmod.game.model.Coordinate
+import gg.rsmod.game.model.EntityType
+import gg.rsmod.game.model.MovementQueue
+import gg.rsmod.game.model.PawnList
+import gg.rsmod.game.model.PlayerUID
+import gg.rsmod.game.model.Tile
+import gg.rsmod.game.model.World
 import gg.rsmod.game.model.attr.CURRENT_SHOP_ATTR
 import gg.rsmod.game.model.attr.LEVEL_UP_INCREMENT
 import gg.rsmod.game.model.attr.LEVEL_UP_OLD_XP
@@ -15,16 +29,17 @@ import gg.rsmod.game.model.container.key.ContainerKey
 import gg.rsmod.game.model.container.key.EQUIPMENT_KEY
 import gg.rsmod.game.model.container.key.INVENTORY_KEY
 import gg.rsmod.game.model.interf.InterfaceSet
+import gg.rsmod.game.model.interf.listener.PlayerInterfaceListener
 import gg.rsmod.game.model.item.Item
 import gg.rsmod.game.model.priv.Privilege
 import gg.rsmod.game.model.skill.SkillSet
 import gg.rsmod.game.model.timer.ACTIVE_COMBAT_TIMER
 import gg.rsmod.game.model.timer.FORCE_DISCONNECTION_TIMER
 import gg.rsmod.game.model.varp.VarpSet
+import gg.rsmod.game.service.log.LoggerService
 import gg.rsmod.game.sync.block.UpdateBlockType
 import it.unimi.dsi.fastutil.objects.ObjectArrayList
-import java.util.*
-import kotlin.collections.HashMap
+import java.util.Arrays
 
 /**
  * A [Pawn] that represents a player.
@@ -96,12 +111,12 @@ open class Player(world: World) : Pawn(world) {
      * A map that contains all the [ItemContainer]s a player can have.
      */
     val containers = HashMap<ContainerKey, ItemContainer>().apply {
-        put(INVENTORY_KEY,  inventory)
-        put(EQUIPMENT_KEY,  equipment)
-        put(BANK_KEY,       bank)
+        put(INVENTORY_KEY, inventory)
+        put(EQUIPMENT_KEY, equipment)
+        put(BANK_KEY, bank)
     }
 
-    val interfaces by lazy { InterfaceSet(this) }
+    val interfaces by lazy { InterfaceSet(PlayerInterfaceListener(this, world.plugins)) }
 
     val varps = VarpSet(maxVarps = world.definitions.getCount(VarpDef::class.java))
 
@@ -170,31 +185,41 @@ open class Player(world: World) : Pawn(world) {
      */
     internal val localNpcs = ObjectArrayList<Npc>()
 
-    val looks = intArrayOf(9, 14, 109, 26, 33, 36, 42)
-
-    val lookColors = intArrayOf(0, 3, 2, 0, 0)
+    var appearance = Appearance.DEFAULT
 
     var weight = 0.0
-
-    var gender = Gender.MALE
 
     var skullIcon = -1
 
     var runEnergy = 100.0
 
+    /**
+     * The current combat level. This must be set externally by a login plugin
+     * that is used on whatever revision you want.
+     */
+    var combatLevel = 3
+
     var gameMode = 0
 
     var xpRate = 1.0
 
+    /**
+     * The last cycle that this client has received the MAP_BUILD_COMPLETE
+     * message. This value is set to [World.currentCycle].
+     *
+     * @see [gg.rsmod.game.message.handler.MapBuildCompleteHandler]
+     */
+    var lastMapBuildTime = 0
+
     fun getSkills(): SkillSet = skillSet
 
-    override fun getType(): EntityType = EntityType.PLAYER
+    override val entityType: EntityType = EntityType.PLAYER
 
     /**
      * Checks if the player is running. We assume that the varp with id of
      * [173] is the running state varp.
      */
-    override fun isRunning(): Boolean = varps[173].state != 0
+    override fun isRunning(): Boolean = varps[173].state != 0 || movementQueue.peekLastStep()?.type == MovementQueue.StepType.FORCED_RUN
 
     override fun getSize(): Int = 1
 
@@ -298,7 +323,9 @@ open class Player(world: World) : Pawn(world) {
             calculateWeightAndBonus(weight = calculateWeight, bonuses = calculateBonuses)
         }
 
-        timerCycle()
+        if (timers.isNotEmpty) {
+            timerCycle()
+        }
 
         hitsCycle()
 
@@ -345,7 +372,7 @@ open class Player(world: World) : Pawn(world) {
      * Handles any logic that should be executed upon bait in.
      */
     fun login() {
-        if (getType().isHumanControlled()) {
+        if (entityType.isHumanControlled()) {
             gpiLocalPlayers[index] = this
             gpiLocalIndexes[gpiLocalCount++] = index
 
@@ -361,6 +388,7 @@ open class Player(world: World) : Pawn(world) {
             System.arraycopy(gpiTileHashMultipliers, 0, tiles, 0, tiles.size)
 
             write(RebuildLoginMessage(index, tile, tiles, world.xteaKeyService))
+            world.getService(LoggerService::class.java, searchSubclasses = true)?.logLogin(this)
         }
 
         if (world.rebootTimer != -1) {
@@ -479,7 +507,6 @@ open class Player(world: World) : Pawn(world) {
      * handled unless the [Player] is controlled by a [Client] user.
      */
     open fun handleMessages() {
-
     }
 
     /**
@@ -487,11 +514,9 @@ open class Player(world: World) : Pawn(world) {
      * be handled unless the [Player] is controlled by a [Client] user.
      */
     open fun write(vararg messages: Message) {
-
     }
 
     open fun write(vararg messages: Any) {
-
     }
 
     /**
@@ -499,7 +524,6 @@ open class Player(world: World) : Pawn(world) {
      * the [Player] is controlled by a [Client] user.
      */
     open fun channelFlush() {
-
     }
 
     /**
@@ -507,7 +531,6 @@ open class Player(world: World) : Pawn(world) {
      * the [Player] is controlled by a [Client] user.
      */
     open fun channelClose() {
-
     }
 
     /**

@@ -27,9 +27,16 @@ class TimerMap {
         timers.remove(key)
     }
 
+    fun clear() {
+        timers.clear()
+    }
+
     fun toPersistentTimers(): List<PersistentTimer> = timers.filter { it.key.persistenceKey != null }.map { PersistentTimer(it.key.persistenceKey, it.key.tickOffline, it.value, System.currentTimeMillis()) }
 
     fun getTimers(): MutableMap<TimerKey, Int> = timers
+
+    val isNotEmpty: Boolean
+        get() = timers.isNotEmpty()
 
     /**
      * Represents a persistent timer that will be saved through player sessions.

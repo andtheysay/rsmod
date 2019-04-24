@@ -12,7 +12,6 @@ import gg.rsmod.plugins.content.combat.CombatConfigs
 import gg.rsmod.plugins.content.combat.strategy.magic.CombatSpell
 import gg.rsmod.plugins.content.mechanics.prayer.Prayer
 import gg.rsmod.plugins.content.mechanics.prayer.Prayers
-import java.util.*
 
 /**
  * @author Tom <rspsmods@gmail.com>
@@ -36,9 +35,9 @@ object MagicCombatFormula : CombatFormula {
 
     private val MAGE_ELITE_VOID = intArrayOf(Items.VOID_MAGE_HELM, Items.ELITE_VOID_TOP, Items.ELITE_VOID_ROBE, Items.VOID_KNIGHT_GLOVES)
 
-    private val BOLT_SPELLS = EnumSet.of(CombatSpell.WIND_BOLT, CombatSpell.WATER_BOLT, CombatSpell.EARTH_BOLT, CombatSpell.FIRE_BOLT)
+    private val BOLT_SPELLS = enumSetOf(CombatSpell.WIND_BOLT, CombatSpell.WATER_BOLT, CombatSpell.EARTH_BOLT, CombatSpell.FIRE_BOLT)
 
-    private val FIRE_SPELLS = EnumSet.of(CombatSpell.FIRE_STRIKE, CombatSpell.FIRE_BOLT, CombatSpell.FIRE_BLAST, CombatSpell.FIRE_WAVE, CombatSpell.FIRE_SURGE)
+    private val FIRE_SPELLS = enumSetOf(CombatSpell.FIRE_STRIKE, CombatSpell.FIRE_BOLT, CombatSpell.FIRE_BLAST, CombatSpell.FIRE_WAVE, CombatSpell.FIRE_SURGE)
 
     override fun getAccuracy(pawn: Pawn, target: Pawn, specialAttackMultiplier: Double): Double {
         val attack = getAttackRoll(pawn)
@@ -97,7 +96,7 @@ object MagicCombatFormula : CombatFormula {
                     // TODO: check if on slayer task and target is slayer task
                     hit *= 1.15
                     hit = Math.floor(hit)
-                } else if (pawn.hasEquipped(EquipmentType.AMULET, Items.SALVE_AMULETEI) && target.combatDef.isUndead()) {
+                } else if (pawn.hasEquipped(EquipmentType.AMULET, Items.SALVE_AMULETEI) && target.isSpecies(NpcSpecies.UNDEAD)) {
                     hit *= 1.20
                     hit = Math.floor(hit)
                 }
@@ -204,13 +203,13 @@ object MagicCombatFormula : CombatFormula {
     }
 
     private fun getEffectiveAttackLevel(npc: Npc): Double {
-        var effectiveLevel = npc.combatDef.magicLvl.toDouble()
+        var effectiveLevel = npc.stats.getCurrentLevel(NpcSkills.MAGIC).toDouble()
         effectiveLevel += 8
         return effectiveLevel
     }
 
     private fun getEffectiveDefenceLevel(npc: Npc): Double {
-        var effectiveLevel = npc.combatDef.defenceLvl.toDouble()
+        var effectiveLevel = npc.stats.getCurrentLevel(NpcSkills.DEFENCE).toDouble()
         effectiveLevel += 8
         return effectiveLevel
     }

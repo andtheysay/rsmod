@@ -4,6 +4,7 @@ import com.google.common.base.MoreObjects
 import gg.rsmod.game.model.EntityType
 import gg.rsmod.game.model.PlayerUID
 import gg.rsmod.game.model.Tile
+import gg.rsmod.game.model.World
 import gg.rsmod.game.model.item.Item
 
 /**
@@ -28,7 +29,7 @@ class GroundItem private constructor(val item: Int, var amount: Int, internal va
 
     internal var respawnCycles = -1
 
-    override fun getType(): EntityType = EntityType.GROUND_ITEM
+    override val entityType: EntityType = EntityType.GROUND_ITEM
 
     fun isOwnedBy(p: Player): Boolean = ownerUID != null && p.uid.value == ownerUID!!.value
 
@@ -39,6 +40,8 @@ class GroundItem private constructor(val item: Int, var amount: Int, internal va
     fun removeOwner() {
         ownerUID = null
     }
+
+    fun isSpawned(world: World): Boolean = world.isSpawned(this)
 
     override fun toString(): String = MoreObjects.toStringHelper(this).add("item", item).add("amount", amount).add("tile", tile.toString()).add("owner", ownerUID).toString()
 

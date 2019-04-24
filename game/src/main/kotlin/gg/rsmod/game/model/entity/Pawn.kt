@@ -2,9 +2,21 @@ package gg.rsmod.game.model.entity
 
 import gg.rsmod.game.action.NpcDeathAction
 import gg.rsmod.game.action.PlayerDeathAction
+import gg.rsmod.game.event.Event
 import gg.rsmod.game.message.impl.SetMapFlagMessage
-import gg.rsmod.game.model.*
-import gg.rsmod.game.model.attr.*
+import gg.rsmod.game.model.Direction
+import gg.rsmod.game.model.Graphic
+import gg.rsmod.game.model.Hit
+import gg.rsmod.game.model.LockState
+import gg.rsmod.game.model.MovementQueue
+import gg.rsmod.game.model.PawnList
+import gg.rsmod.game.model.Tile
+import gg.rsmod.game.model.World
+import gg.rsmod.game.model.attr.AttributeMap
+import gg.rsmod.game.model.attr.COMBAT_TARGET_FOCUS_ATTR
+import gg.rsmod.game.model.attr.FACING_PAWN_ATTR
+import gg.rsmod.game.model.attr.INTERACTING_NPC_ATTR
+import gg.rsmod.game.model.attr.INTERACTING_PLAYER_ATTR
 import gg.rsmod.game.model.bits.INFINITE_VARS_STORAGE
 import gg.rsmod.game.model.bits.InfiniteVarsType
 import gg.rsmod.game.model.collision.CollisionManager
@@ -18,17 +30,20 @@ import gg.rsmod.game.model.path.strategy.SimplePathFindingStrategy
 import gg.rsmod.game.model.queue.QueueTask
 import gg.rsmod.game.model.queue.QueueTaskSet
 import gg.rsmod.game.model.queue.TaskPriority
+import gg.rsmod.game.model.queue.impl.PawnQueueTaskSet
 import gg.rsmod.game.model.region.Chunk
 import gg.rsmod.game.model.timer.FROZEN_TIMER
 import gg.rsmod.game.model.timer.RESET_PAWN_FACING_TIMER
 import gg.rsmod.game.model.timer.STUN_TIMER
 import gg.rsmod.game.model.timer.TimerMap
 import gg.rsmod.game.plugin.Plugin
+import gg.rsmod.game.service.log.LoggerService
 import gg.rsmod.game.sync.block.UpdateBlockBuffer
 import gg.rsmod.game.sync.block.UpdateBlockType
 import kotlinx.coroutines.CoroutineScope
 import java.lang.ref.WeakReference
-import java.util.*
+import java.util.ArrayDeque
+import java.util.Queue
 
 /**
  * A controllable character in the world that is used by something, or someone,
@@ -97,7 +112,7 @@ abstract class Pawn(val world: World) : Entity() {
      */
     val timers = TimerMap()
 
-    internal val queues = QueueTaskSet(headPriority = true)
+    internal val queues: QueueTaskSet = PawnQueueTaskSet()
 
     /**
      * The equipment bonus for the pawn.
@@ -118,7 +133,7 @@ abstract class Pawn(val world: World) : Entity() {
     /**
      * A list of pending [Hit]s.
      */
-    private val pendingHits = arrayListOf<Hit>()
+    private val pendingHits = mutableListOf<Hit>()
 
     /**
      * A [DamageMap] to keep track of who has dealt damage to this pawn.
@@ -235,7 +250,7 @@ abstract class Pawn(val world: World) : Entity() {
          * combat <strong>unless</strong> they have a custom npc combat plugin
          * bound to their npc id.
          */
-        if (getType().isPlayer() || this is Npc && !world.plugins.executeNpcCombat(this)) {
+        if (entityType.isPlayer() || this is Npc && !world.plugins.executeNpcCombat(this)) {
             world.plugins.executeCombat(this)
         }
     }
@@ -252,9 +267,11 @@ abstract class Pawn(val world: World) : Entity() {
      * Handle a single cycle for [timers].
      */
     fun timerCycle() {
-        val timersCopy = timers.getTimers().toMutableMap()
-
-        timersCopy.forEach { key, time ->
+        val iterator = timers.getTimers().iterator()
+        while (iterator.hasNext()) {
+            val entry = iterator.next()
+            val key = entry.key
+            val time = entry.value
             if (time <= 0) {
                 if (key == RESET_PAWN_FACING_TIMER) {
                     resetFacePawn()
@@ -262,7 +279,7 @@ abstract class Pawn(val world: World) : Entity() {
                     world.plugins.executeTimer(this, key)
                 }
                 if (!timers.has(key)) {
-                    timers.remove(key)
+                    iterator.remove()
                 }
             }
         }
@@ -298,13 +315,21 @@ abstract class Pawn(val world: World) : Entity() {
                         if (hitmark.damage > hp) {
                             hitmark.damage = hp
                         }
+                        /*
+                         * Only lower the pawn's hp if they do not have infinite
+                         * health enabled.
+                         */
                         if (INFINITE_VARS_STORAGE.get(this, InfiniteVarsType.HP) == 0) {
                             setCurrentHp(hp - hitmark.damage)
                         }
+                        /*
+                         * If the pawn has less than or equal to 0 health,
+                         * terminate all queues and begin the death logic.
+                         */
                         if (getCurrentHp() <= 0) {
                             hit.actions.forEach { action -> action() }
                             interruptQueues()
-                            if (getType().isPlayer()) {
+                            if (entityType.isPlayer()) {
                                 executePlugin(PlayerDeathAction.deathPlugin)
                             } else {
                                 executePlugin(NpcDeathAction.deathPlugin)
@@ -318,7 +343,7 @@ abstract class Pawn(val world: World) : Entity() {
                 hitIterator.remove()
             }
         }
-        if (isDead()) {
+        if (isDead() && pendingHits.isNotEmpty()) {
             pendingHits.clear()
         }
     }
@@ -438,7 +463,7 @@ abstract class Pawn(val world: World) : Entity() {
 
     suspend fun walkTo(it: QueueTask, x: Int, z: Int, stepType: MovementQueue.StepType = MovementQueue.StepType.NORMAL,
                        projectilePath: Boolean = false): Route {
-        /**
+        /*
          * Already standing on requested destination.
          */
         if (tile.x == x && tile.z == z) {
@@ -500,7 +525,7 @@ abstract class Pawn(val world: World) : Entity() {
     }
 
     fun faceTile(face: Tile, width: Int = 1, length: Int = 1) {
-        if (getType().isPlayer()) {
+        if (entityType.isPlayer()) {
             val srcX = tile.x * 64
             val srcZ = tile.z * 64
             val dstX = face.x * 64
@@ -513,7 +538,7 @@ abstract class Pawn(val world: World) : Entity() {
             degreesZ += (Math.floor(length / 2.0)) * 32
 
             blockBuffer.faceDegrees = (Math.atan2(degreesX, degreesZ) * 325.949).toInt() and 0x7ff
-        } else if (getType().isNpc()) {
+        } else if (entityType.isNpc()) {
             blockBuffer.faceDegrees = (face.x shl 16) or face.z
         }
 
@@ -524,7 +549,7 @@ abstract class Pawn(val world: World) : Entity() {
     fun facePawn(pawn: Pawn) {
         blockBuffer.faceDegrees = 0
 
-        val index = if (pawn.getType().isPlayer()) pawn.index + 32768 else pawn.index
+        val index = if (pawn.entityType.isPlayer()) pawn.index + 32768 else pawn.index
         if (blockBuffer.facePawnIndex != index) {
             blockBuffer.faceDegrees = 0
             blockBuffer.facePawnIndex = index
@@ -576,6 +601,11 @@ abstract class Pawn(val world: World) : Entity() {
         return logic(plugin)
     }
 
+    fun triggerEvent(event: Event) {
+        world.plugins.executeEvent(this, event)
+        world.getService(LoggerService::class.java, searchSubclasses = true)?.logEvent(this, event)
+    }
+
     internal fun createPathFindingStrategy(copyChunks: Boolean = false): PathFindingStrategy {
         val collision: CollisionManager = if (copyChunks) {
             val chunks = world.chunks.copyChunksWithinRadius(tile.chunkCoords, height = tile.height, radius = Chunk.CHUNK_VIEW_RADIUS)
@@ -583,6 +613,6 @@ abstract class Pawn(val world: World) : Entity() {
         } else {
             world.collision
         }
-        return if (getType().isPlayer()) BFSPathFindingStrategy(collision) else SimplePathFindingStrategy(collision)
+        return if (entityType.isPlayer()) BFSPathFindingStrategy(collision) else SimplePathFindingStrategy(collision)
     }
 }

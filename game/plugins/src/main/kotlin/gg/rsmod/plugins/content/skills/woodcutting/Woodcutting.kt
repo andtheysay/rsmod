@@ -6,10 +6,7 @@ import gg.rsmod.game.model.entity.GameObject
 import gg.rsmod.game.model.entity.Player
 import gg.rsmod.game.model.queue.QueueTask
 import gg.rsmod.plugins.api.Skills
-import gg.rsmod.plugins.api.ext.filterableMessage
-import gg.rsmod.plugins.api.ext.interpolate
-import gg.rsmod.plugins.api.ext.playSound
-import gg.rsmod.plugins.api.ext.player
+import gg.rsmod.plugins.api.ext.*
 
 /**
  * @author Tom <rspsmods@gmail.com>
@@ -26,7 +23,7 @@ object Woodcutting {
         }
 
         val logName = p.world.definitions.get(ItemDef::class.java, tree.log).name
-        val axe = AxeType.values.firstOrNull { p.getSkills().getMaxLevel(Skills.WOODCUTTING) >= it.level && (p.inventory.contains(it.item) || p.equipment.contains(it.item)) }!!
+        val axe = AxeType.values.firstOrNull { p.getSkills().getMaxLevel(Skills.WOODCUTTING) >= it.level && (p.equipment.contains(it.item) || p.inventory.contains(it.item)) }!!
 
         p.filterableMessage("You swing your axe at the tree.")
         while (true) {
@@ -40,13 +37,13 @@ object Woodcutting {
 
             val level = p.getSkills().getCurrentLevel(Skills.WOODCUTTING)
             if (level.interpolate(minChance = 60, maxChance = 190, minLvl = 1, maxLvl = 99, cap = 255)) {
-                p.filterableMessage("You get some ${logName}s.")
+                p.filterableMessage("You get some ${logName.pluralSuffix(1)}.")
+                p.playSound(3600)
                 p.inventory.add(tree.log)
+                p.addXp(Skills.WOODCUTTING, tree.xp)
 
                 if (p.world.random(tree.depleteChance) == 0) {
-                    p.playSound(3600)
                     p.animate(-1)
-                    p.addXp(Skills.WOODCUTTING, tree.xp)
 
                     if (trunkId != -1) {
                         val world = p.world
@@ -71,7 +68,7 @@ object Woodcutting {
             return false
         }
 
-        val axe = AxeType.values.firstOrNull { p.getSkills().getMaxLevel(Skills.WOODCUTTING) >= it.level && (p.inventory.contains(it.item) || p.equipment.contains(it.item)) }
+        val axe = AxeType.values.firstOrNull { p.getSkills().getMaxLevel(Skills.WOODCUTTING) >= it.level && (p.equipment.contains(it.item) || p.inventory.contains(it.item)) }
         if (axe == null) {
             p.message("You need an axe to chop down this tree.")
             p.message("You do not have an axe which you have the woodcutting level to use.")

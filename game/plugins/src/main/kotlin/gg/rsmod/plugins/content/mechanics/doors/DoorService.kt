@@ -1,4 +1,4 @@
-package gg.rsmod.plugins.service.doors
+package gg.rsmod.plugins.content.mechanics.doors
 
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
@@ -47,5 +47,5 @@ class DoorService : Service {
     override fun terminate(server: Server, world: World) {
     }
 
-    companion object: KLogging()
+    companion object : KLogging()
 }

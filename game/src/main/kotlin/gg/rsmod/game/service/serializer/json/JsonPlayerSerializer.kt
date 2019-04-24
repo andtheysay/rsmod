@@ -3,7 +3,6 @@ package gg.rsmod.game.service.serializer.json
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
-import com.lambdaworks.crypto.SCryptUtil
 import gg.rsmod.game.Server
 import gg.rsmod.game.model.PlayerUID
 import gg.rsmod.game.model.Tile
@@ -20,10 +19,11 @@ import gg.rsmod.game.service.serializer.PlayerSerializerService
 import gg.rsmod.net.codec.login.LoginRequest
 import gg.rsmod.util.ServerProperties
 import mu.KLogging
+import org.mindrot.jbcrypt.BCrypt
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
-import java.util.*
+import java.util.Arrays
 
 /**
  * A [PlayerSerializerService] implementation that decodes and encodes player
@@ -63,7 +63,7 @@ class JsonPlayerSerializer : PlayerSerializerService() {
                  * If the [request] is not a [LoginRequest.reconnecting] request, we have to
                  * verify the password is correct.
                  */
-                if (!SCryptUtil.check(request.password, data.passwordHash)) {
+                if (!BCrypt.checkpw(request.password, data.passwordHash)) {
                     return PlayerLoadResult.INVALID_CREDENTIALS
                 }
             } else {
@@ -89,7 +89,7 @@ class JsonPlayerSerializer : PlayerSerializerService() {
                 client.getSkills().setCurrentLevel(skill.skill, skill.lvl)
             }
             data.itemContainers.forEach {
-                val key = world.registeredContainers.firstOrNull { other -> other.name == it.name }
+                val key = world.plugins.containerKeys.firstOrNull { other -> other.name == it.name }
                 if (key == null) {
                     logger.error { "Container was found in serialized data, but is not registered to our World. [key=${it.name}]" }
                     return@forEach
@@ -141,7 +141,7 @@ class JsonPlayerSerializer : PlayerSerializerService() {
     }
 
     private fun getContainers(client: Client): List<PersistentContainer> {
-        val containers = arrayListOf<PersistentContainer>()
+        val containers = mutableListOf<PersistentContainer>()
 
         client.containers.forEach { key, container ->
             if (!container.isEmpty) {
@@ -153,7 +153,7 @@ class JsonPlayerSerializer : PlayerSerializerService() {
     }
 
     private fun getSkills(client: Client): List<PersistentSkill> {
-        val skills = arrayListOf<PersistentSkill>()
+        val skills = mutableListOf<PersistentSkill>()
 
         for (i in 0 until client.getSkills().maxSkills) {
             val xp = client.getSkills().getCurrentXp(i)
@@ -172,5 +172,5 @@ class JsonPlayerSerializer : PlayerSerializerService() {
                                @JsonProperty("xp") val xp: Double,
                                @JsonProperty("lvl") val lvl: Int)
 
-    companion object: KLogging()
+    companion object : KLogging()
 }
