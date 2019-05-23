@@ -22,6 +22,12 @@ import java.lang.ref.WeakReference
 val NEW_ACCOUNT_ATTR = AttributeKey<Boolean>()
 
 /**
+ * A flag which indicates that the player will not take collision into account
+ * when walking.
+ */
+val NO_CLIP_ATTR = AttributeKey<Boolean>()
+
+/**
  * A flag that indicates whether or not this player has protect-item
  * prayer active.
  */
@@ -71,17 +77,17 @@ val LAST_HIT_BY_ATTR = AttributeKey<WeakReference<Pawn>>()
 /**
  * The amount of "poison ticks" left before the poison wears off.
  */
-val POISON_TICKS_LEFT_ATTR = AttributeKey<Int>(persistenceKey = "poison_ticks_left")
+val POISON_TICKS_LEFT_ATTR = AttributeKey<Int>(persistenceKey = "poison_ticks_left", resetOnDeath = true)
 
 /**
  * The amount of antifire potion charges left.
  */
-val ANTIFIRE_POTION_CHARGES_ATTR = AttributeKey<Int>(persistenceKey = "antifire_potion_charges")
+val ANTIFIRE_POTION_CHARGES_ATTR = AttributeKey<Int>(persistenceKey = "antifire_potion_charges", resetOnDeath = true)
 
 /**
  * If full dragonfire immunity is enabled.
  */
-val DRAGONFIRE_IMMUNITY_ATTR = AttributeKey<Boolean>(persistenceKey = "dragonfire_immunity")
+val DRAGONFIRE_IMMUNITY_ATTR = AttributeKey<Boolean>(persistenceKey = "dragonfire_immunity", resetOnDeath = true)
 
 /**
  * The command that the player has submitted to the server using the '::' prefix.
@@ -143,6 +149,11 @@ val INTERACTING_ITEM_SLOT = AttributeKey<Int>()
 val INTERACTING_ITEM_ID = AttributeKey<Int>()
 
 /**
+ * The item pointer of the interacting item.
+ */
+val INTERACTING_ITEM = AttributeKey<WeakReference<Item>>()
+
+/**
  * The slot index of any 'secondary' item being interacted with.
  */
 val OTHER_ITEM_SLOT_ATTR = AttributeKey<Int>()
@@ -153,9 +164,9 @@ val OTHER_ITEM_SLOT_ATTR = AttributeKey<Int>()
 val OTHER_ITEM_ID_ATTR = AttributeKey<Int>()
 
 /**
- * The item pointer of the interacting item.
+ * The item pointer of any 'secondary' item being interacted with.
  */
-val INTERACTING_ITEM = AttributeKey<WeakReference<Item>>()
+val OTHER_ITEM_ATTR = AttributeKey<WeakReference<Item>>()
 
 /**
  * Interacting interface parent id.

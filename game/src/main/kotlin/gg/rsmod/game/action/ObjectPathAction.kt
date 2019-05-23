@@ -3,11 +3,15 @@ package gg.rsmod.game.action
 import gg.rsmod.game.fs.def.ObjectDef
 import gg.rsmod.game.message.impl.SetMapFlagMessage
 import gg.rsmod.game.model.Direction
+import gg.rsmod.game.model.MovementQueue
 import gg.rsmod.game.model.attr.INTERACTING_ITEM
 import gg.rsmod.game.model.attr.INTERACTING_OBJ_ATTR
 import gg.rsmod.game.model.attr.INTERACTING_OPT_ATTR
 import gg.rsmod.game.model.collision.ObjectType
-import gg.rsmod.game.model.entity.*
+import gg.rsmod.game.model.entity.Entity
+import gg.rsmod.game.model.entity.GameObject
+import gg.rsmod.game.model.entity.Pawn
+import gg.rsmod.game.model.entity.Player
 import gg.rsmod.game.model.path.PathRequest
 import gg.rsmod.game.model.path.Route
 import gg.rsmod.game.model.queue.QueueTask
@@ -17,7 +21,8 @@ import gg.rsmod.game.model.timer.STUN_TIMER
 import gg.rsmod.game.plugin.Plugin
 import gg.rsmod.util.AabbUtil
 import gg.rsmod.util.DataConstants
-import java.util.*
+import java.util.ArrayDeque
+import java.util.EnumSet
 
 /**
  * This class is responsible for calculating distances and valid interaction
@@ -27,65 +32,60 @@ import java.util.*
  */
 object ObjectPathAction {
 
-    fun walk(client: Client, obj: GameObject, lineOfSightRange: Int?, logic: Plugin.() -> Unit) {
-
-        client.queue(TaskPriority.STANDARD) {
+    fun walk(player: Player, obj: GameObject, lineOfSightRange: Int?, logic: Plugin.() -> Unit) {
+        player.queue(TaskPriority.STANDARD) {
             terminateAction = {
-                client.stopMovement()
-                client.write(SetMapFlagMessage(255, 255))
+                player.stopMovement()
+                player.write(SetMapFlagMessage(255, 255))
             }
 
             val route = walkTo(obj, lineOfSightRange)
             if (route.success) {
                 if (lineOfSightRange == null || lineOfSightRange > 0) {
-                    faceObj(client, obj)
+                    faceObj(player, obj)
                 }
-                client.executePlugin(logic)
+                player.executePlugin(logic)
             } else {
-                client.faceTile(obj.tile)
+                player.faceTile(obj.tile)
                 when {
-                    client.timers.has(FROZEN_TIMER) -> client.message(Entity.MAGIC_STOPS_YOU_FROM_MOVING)
-                    client.timers.has(STUN_TIMER) -> client.message(Entity.YOURE_STUNNED)
-                    else -> client.message(Entity.YOU_CANT_REACH_THAT)
+                    player.timers.has(FROZEN_TIMER) -> player.writeMessage(Entity.MAGIC_STOPS_YOU_FROM_MOVING)
+                    player.timers.has(STUN_TIMER) -> player.writeMessage(Entity.YOURE_STUNNED)
+                    else -> player.writeMessage(Entity.YOU_CANT_REACH_THAT)
                 }
-                client.write(SetMapFlagMessage(255, 255))
+                player.write(SetMapFlagMessage(255, 255))
             }
         }
     }
 
     val itemOnObjectPlugin: Plugin.() -> Unit = {
-
-        val client = ctx as Client
         val player = ctx as Player
 
         val item = player.attr[INTERACTING_ITEM]!!.get()!!
         val obj = player.attr[INTERACTING_OBJ_ATTR]!!.get()!!
         val lineOfSightRange = player.world.plugins.getObjInteractionDistance(obj.id)
 
-        walk(client, obj, lineOfSightRange) {
+        walk(player, obj, lineOfSightRange) {
             if (!player.world.plugins.executeItemOnObject(player, obj.getTransform(player), item.id)) {
-                player.message(Entity.NOTHING_INTERESTING_HAPPENS)
+                player.writeMessage(Entity.NOTHING_INTERESTING_HAPPENS)
                 if (player.world.devContext.debugObjects) {
-                    player.message("Unhandled item on object: [item=$item, id=${obj.id}, type=${obj.type}, rot=${obj.rot}, x=${obj.tile.x}, z=${obj.tile.z}]")
+                    player.writeMessage("Unhandled item on object: [item=$item, id=${obj.id}, type=${obj.type}, rot=${obj.rot}, x=${obj.tile.x}, z=${obj.tile.z}]")
                 }
             }
         }
     }
 
     val objectInteractPlugin: Plugin.() -> Unit = {
-
-        val client = ctx as Client
         val player = ctx as Player
 
         val obj = player.attr[INTERACTING_OBJ_ATTR]!!.get()!!
         val opt = player.attr[INTERACTING_OPT_ATTR]
         val lineOfSightRange = player.world.plugins.getObjInteractionDistance(obj.id)
 
-        walk(client, obj, lineOfSightRange) {
+        walk(player, obj, lineOfSightRange) {
             if (!player.world.plugins.executeObject(player, obj.getTransform(player), opt!!)) {
-                player.message(Entity.NOTHING_INTERESTING_HAPPENS)
+                player.writeMessage(Entity.NOTHING_INTERESTING_HAPPENS)
                 if (player.world.devContext.debugObjects) {
-                    player.message("Unhandled object action: [opt=$opt, id=${obj.id}, type=${obj.type}, rot=${obj.rot}, x=${obj.tile.x}, z=${obj.tile.z}]")
+                    player.writeMessage("Unhandled object action: [opt=$opt, id=${obj.id}, type=${obj.type}, rot=${obj.rot}, x=${obj.tile.x}, z=${obj.tile.z}]")
                 }
             }
         }
@@ -215,7 +215,7 @@ object ObjectPathAction {
             return Route(ArrayDeque(), success = false, tail = pawn.tile)
         }
 
-        pawn.walkPath(route.path)
+        pawn.walkPath(route.path, MovementQueue.StepType.NORMAL, detectCollision = true)
 
         val last = pawn.movementQueue.peekLast()
         while (last != null && !pawn.tile.sameAs(last) && !pawn.timers.has(FROZEN_TIMER) && !pawn.timers.has(STUN_TIMER) && pawn.lock.canMove()) {

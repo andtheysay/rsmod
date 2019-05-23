@@ -4,19 +4,8 @@ import gg.rsmod.game.action.NpcDeathAction
 import gg.rsmod.game.action.PlayerDeathAction
 import gg.rsmod.game.event.Event
 import gg.rsmod.game.message.impl.SetMapFlagMessage
-import gg.rsmod.game.model.Direction
-import gg.rsmod.game.model.Graphic
-import gg.rsmod.game.model.Hit
-import gg.rsmod.game.model.LockState
-import gg.rsmod.game.model.MovementQueue
-import gg.rsmod.game.model.PawnList
-import gg.rsmod.game.model.Tile
-import gg.rsmod.game.model.World
-import gg.rsmod.game.model.attr.AttributeMap
-import gg.rsmod.game.model.attr.COMBAT_TARGET_FOCUS_ATTR
-import gg.rsmod.game.model.attr.FACING_PAWN_ATTR
-import gg.rsmod.game.model.attr.INTERACTING_NPC_ATTR
-import gg.rsmod.game.model.attr.INTERACTING_PLAYER_ATTR
+import gg.rsmod.game.model.*
+import gg.rsmod.game.model.attr.*
 import gg.rsmod.game.model.bits.INFINITE_VARS_STORAGE
 import gg.rsmod.game.model.bits.InfiniteVarsType
 import gg.rsmod.game.model.collision.CollisionManager
@@ -92,6 +81,12 @@ abstract class Pawn(val world: World) : Entity() {
      * The last [Direction] this pawn was facing.
      */
     internal var lastFacingDirection: Direction = Direction.SOUTH
+
+    /**
+     * A public getter property for [lastFacingDirection].
+     */
+    val faceDirection: Direction
+        get() = lastFacingDirection
 
     /**
      * The current [LockState] which filters what actions this pawn can perform.
@@ -327,7 +322,7 @@ abstract class Pawn(val world: World) : Entity() {
                          * terminate all queues and begin the death logic.
                          */
                         if (getCurrentHp() <= 0) {
-                            hit.actions.forEach { action -> action() }
+                            hit.actions.forEach { action -> action(hit) }
                             interruptQueues()
                             if (entityType.isPlayer()) {
                                 executePlugin(PlayerDeathAction.deathPlugin)
@@ -338,7 +333,7 @@ abstract class Pawn(val world: World) : Entity() {
                             break@iterator
                         }
                     }
-                    hit.actions.forEach { action -> action() }
+                    hit.actions.forEach { action -> action(hit) }
                 }
                 hitIterator.remove()
             }
@@ -354,7 +349,7 @@ abstract class Pawn(val world: World) : Entity() {
     fun handleFutureRoute() {
         if (futureRoute?.completed == true && futureRoute?.strategy?.cancel == false) {
             val futureRoute = futureRoute!!
-            walkPath(futureRoute.route.path, futureRoute.stepType)
+            walkPath(futureRoute.route.path, futureRoute.stepType, futureRoute.detectCollision)
             this.futureRoute = null
         }
     }
@@ -363,7 +358,7 @@ abstract class Pawn(val world: World) : Entity() {
      * Walk to all the tiles specified in our [path] queue, using [stepType] as
      * the [MovementQueue.StepType].
      */
-    fun walkPath(path: Queue<Tile>, stepType: MovementQueue.StepType = MovementQueue.StepType.NORMAL) {
+    fun walkPath(path: Queue<Tile>, stepType: MovementQueue.StepType, detectCollision: Boolean) {
         if (path.isEmpty()) {
             if (this is Player) {
                 write(SetMapFlagMessage(255, 255))
@@ -373,7 +368,7 @@ abstract class Pawn(val world: World) : Entity() {
 
         if (timers.has(FROZEN_TIMER)) {
             if (this is Player) {
-                message(Entity.MAGIC_STOPS_YOU_FROM_MOVING)
+                writeMessage(MAGIC_STOPS_YOU_FROM_MOVING)
             }
             return
         }
@@ -387,7 +382,7 @@ abstract class Pawn(val world: World) : Entity() {
         var tail: Tile? = null
         var next = path.poll()
         while (next != null) {
-            movementQueue.addStep(next, stepType)
+            movementQueue.addStep(next, stepType, detectCollision)
             val poll = path.poll()
             if (poll == null) {
                 tail = next
@@ -412,11 +407,9 @@ abstract class Pawn(val world: World) : Entity() {
         }
     }
 
-    fun walkTo(tile: Tile, stepType: MovementQueue.StepType = MovementQueue.StepType.NORMAL,
-               projectilePath: Boolean = false) = walkTo(tile.x, tile.z, stepType, projectilePath)
+    fun walkTo(tile: Tile, stepType: MovementQueue.StepType = MovementQueue.StepType.NORMAL, detectCollision: Boolean = true) = walkTo(tile.x, tile.z, stepType, detectCollision)
 
-    fun walkTo(x: Int, z: Int, stepType: MovementQueue.StepType = MovementQueue.StepType.NORMAL,
-               projectilePath: Boolean = false) {
+    fun walkTo(x: Int, z: Int, stepType: MovementQueue.StepType = MovementQueue.StepType.NORMAL, detectCollision: Boolean = true) {
         /*
          * Already standing on requested destination.
          */
@@ -426,7 +419,7 @@ abstract class Pawn(val world: World) : Entity() {
 
         if (timers.has(FROZEN_TIMER)) {
             if (this is Player) {
-                message(Entity.MAGIC_STOPS_YOU_FROM_MOVING)
+                writeMessage(MAGIC_STOPS_YOU_FROM_MOVING)
             }
             return
         }
@@ -436,7 +429,7 @@ abstract class Pawn(val world: World) : Entity() {
         }
 
         val multiThread = world.multiThreadPathFinding
-        val request = PathRequest.createWalkRequest(this, x, z, projectilePath)
+        val request = PathRequest.createWalkRequest(this, x, z, projectile = false, detectCollision = detectCollision)
         val strategy = createPathFindingStrategy(copyChunks = multiThread)
 
         /*
@@ -451,36 +444,31 @@ abstract class Pawn(val world: World) : Entity() {
         futureRoute?.strategy?.cancel = true
 
         if (multiThread) {
-            futureRoute = FutureRoute.of(strategy, request, stepType)
+            futureRoute = FutureRoute.of(strategy, request, stepType, detectCollision)
         } else {
             val route = strategy.calculateRoute(request)
-            walkPath(route.path, stepType)
+            walkPath(route.path, stepType, detectCollision)
         }
     }
 
-    suspend fun walkTo(it: QueueTask, tile: Tile, stepType: MovementQueue.StepType = MovementQueue.StepType.NORMAL,
-                       projectilePath: Boolean = false) = walkTo(it, tile.x, tile.z, stepType, projectilePath)
+    suspend fun walkTo(it: QueueTask, tile: Tile, stepType: MovementQueue.StepType = MovementQueue.StepType.NORMAL, detectCollision: Boolean = true) = walkTo(it, tile.x, tile.z, stepType, detectCollision)
 
-    suspend fun walkTo(it: QueueTask, x: Int, z: Int, stepType: MovementQueue.StepType = MovementQueue.StepType.NORMAL,
-                       projectilePath: Boolean = false): Route {
+    suspend fun walkTo(it: QueueTask, x: Int, z: Int, stepType: MovementQueue.StepType = MovementQueue.StepType.NORMAL, detectCollision: Boolean = true): Route {
         /*
          * Already standing on requested destination.
          */
         if (tile.x == x && tile.z == z) {
-            return Route(ArrayDeque(), success = true, tail = Tile(tile))
+            return Route(EMPTY_TILE_DEQUE, success = true, tail = Tile(tile))
         }
         val multiThread = world.multiThreadPathFinding
-        val request = PathRequest.createWalkRequest(this, x, z, projectilePath)
+        val request = PathRequest.createWalkRequest(this, x, z, projectile = false, detectCollision = detectCollision)
         val strategy = createPathFindingStrategy(copyChunks = multiThread)
 
-        if (multiThread) {
-            movementQueue.clear()
-        }
         movementQueue.clear()
         futureRoute?.strategy?.cancel = true
 
         if (multiThread) {
-            futureRoute = FutureRoute.of(strategy, request, stepType)
+            futureRoute = FutureRoute.of(strategy, request, stepType, detectCollision)
             while (!futureRoute!!.completed) {
                 it.wait(1)
             }
@@ -488,7 +476,7 @@ abstract class Pawn(val world: World) : Entity() {
         }
 
         val route = strategy.calculateRoute(request)
-        walkPath(route.path, stepType)
+        walkPath(route.path, stepType, detectCollision)
         return route
     }
 
@@ -503,8 +491,9 @@ abstract class Pawn(val world: World) : Entity() {
         moveTo(tile.x, tile.z, tile.height)
     }
 
-    fun animate(id: Int) {
+    fun animate(id: Int, delay: Int = 0) {
         blockBuffer.animation = id
+        blockBuffer.animationDelay = delay
         addBlock(UpdateBlockType.ANIMATION)
     }
 
@@ -539,7 +528,9 @@ abstract class Pawn(val world: World) : Entity() {
 
             blockBuffer.faceDegrees = (Math.atan2(degreesX, degreesZ) * 325.949).toInt() and 0x7ff
         } else if (entityType.isNpc()) {
-            blockBuffer.faceDegrees = (face.x shl 16) or face.z
+            val faceX = (face.x shl 1) + 1
+            val faceZ = (face.z shl 1) + 1
+            blockBuffer.faceDegrees = (faceX shl 16) or faceZ
         }
 
         blockBuffer.facePawnIndex = -1
@@ -614,5 +605,9 @@ abstract class Pawn(val world: World) : Entity() {
             world.collision
         }
         return if (entityType.isPlayer()) BFSPathFindingStrategy(collision) else SimplePathFindingStrategy(collision)
+    }
+
+    companion object {
+        private val EMPTY_TILE_DEQUE = ArrayDeque<Tile>()
     }
 }

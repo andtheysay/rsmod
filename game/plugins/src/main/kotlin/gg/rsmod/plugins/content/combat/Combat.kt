@@ -13,19 +13,8 @@ import gg.rsmod.game.model.entity.Player
 import gg.rsmod.game.model.queue.QueueTask
 import gg.rsmod.game.model.timer.ACTIVE_COMBAT_TIMER
 import gg.rsmod.game.model.timer.ATTACK_DELAY
-import gg.rsmod.plugins.api.BonusSlot
-import gg.rsmod.plugins.api.NpcSkills
-import gg.rsmod.plugins.api.ProjectileType
-import gg.rsmod.plugins.api.Skills
-import gg.rsmod.plugins.api.WeaponType
-import gg.rsmod.plugins.api.ext.closeInterface
-import gg.rsmod.plugins.api.ext.getAttackBonus
-import gg.rsmod.plugins.api.ext.getAttackStyle
-import gg.rsmod.plugins.api.ext.getBonus
-import gg.rsmod.plugins.api.ext.getStrengthBonus
-import gg.rsmod.plugins.api.ext.getVarbit
-import gg.rsmod.plugins.api.ext.getVarp
-import gg.rsmod.plugins.api.ext.hasWeaponType
+import gg.rsmod.plugins.api.*
+import gg.rsmod.plugins.api.ext.*
 import gg.rsmod.plugins.content.combat.strategy.CombatStrategy
 import gg.rsmod.plugins.content.combat.strategy.MagicCombatStrategy
 import gg.rsmod.plugins.content.combat.strategy.MeleeCombatStrategy
@@ -86,13 +75,15 @@ object Combat {
         val blockAnimation = CombatConfigs.getBlockAnimation(target)
         target.animate(blockAnimation)
 
-        if (target.entityType.isNpc()) {
-            if (!target.attr.has(COMBAT_TARGET_FOCUS_ATTR) || target.attr[COMBAT_TARGET_FOCUS_ATTR]!!.get() != pawn) {
-                target.attack(pawn)
-            }
-        } else if (target is Player) {
-            if (target.getVarp(AttackTab.DISABLE_AUTO_RETALIATE_VARP) == 0 && target.getCombatTarget() != pawn) {
-                target.attack(pawn)
+        if (target.lock.canAttack()) {
+            if (target.entityType.isNpc()) {
+                if (!target.attr.has(COMBAT_TARGET_FOCUS_ATTR) || target.attr[COMBAT_TARGET_FOCUS_ATTR]!!.get() != pawn) {
+                    target.attack(pawn)
+                }
+            } else if (target is Player) {
+                if (target.getVarp(AttackTab.DISABLE_AUTO_RETALIATE_VARP) == 0 && target.getCombatTarget() != pawn) {
+                    target.attack(pawn)
+                }
             }
         }
     }
@@ -155,7 +146,6 @@ object Combat {
         }
 
         val pvp = pawn.entityType.isPlayer() && target.entityType.isPlayer()
-        val pvm = pawn.entityType.isPlayer() && target.entityType.isNpc()
 
         if (pawn is Player) {
             if (!pawn.isOnline) {
@@ -197,13 +187,37 @@ object Combat {
             if (!target.lock.canBeAttacked()) {
                 return false
             }
-        }
 
-        if (pvp) {
-            // TODO: must be within combat lvl range
-            // TODO: make sure they're in wildy or in dangerous minigame
+            if (pvp) {
+                pawn as Player
+
+                if (!inPvpArea(pawn)) {
+                    pawn.message("You can't attack players here.")
+                    return false
+                }
+
+                if (!inPvpArea(target)) {
+                    pawn.message("You can't attack ${target.username} there.")
+                    return false
+                }
+
+                val combatLvlRange = getValidCombatLvlRange(pawn)
+                if (target.combatLevel !in combatLvlRange) {
+                    pawn.message("You can't attack ${target.username} - your level different is too great.")
+                    return false
+                }
+            }
         }
         return true
+    }
+
+    private fun inPvpArea(player: Player): Boolean = player.inWilderness()
+
+    private fun getValidCombatLvlRange(player: Player): IntRange {
+        val wildLvl = player.tile.getWildernessLevel()
+        val minLvl = Math.max(Skills.MIN_COMBAT_LVL, player.combatLevel - wildLvl)
+        val maxLvl = Math.min(Skills.MAX_COMBAT_LVL, player.combatLevel + wildLvl)
+        return minLvl..maxLvl
     }
 
     private fun getStrategy(combatClass: CombatClass): CombatStrategy = when (combatClass) {

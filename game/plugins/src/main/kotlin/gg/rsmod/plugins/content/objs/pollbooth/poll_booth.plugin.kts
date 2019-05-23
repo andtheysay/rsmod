@@ -1,6 +1,7 @@
 package gg.rsmod.plugins.content.objs.pollbooth
 
 import com.google.common.collect.ImmutableSet
+import kotlin.collections.forEach as forEach1
 
 val BOOTHS = ImmutableSet.of(Objs.POLL_BOOTH, Objs.POLL_BOOTH_26796, Objs.POLL_BOOTH_33482,
         Objs.POLL_BOOTH_26797, Objs.POLL_BOOTH_26798, Objs.POLL_BOOTH_26799, Objs.POLL_BOOTH_26800,
@@ -9,10 +10,14 @@ val BOOTHS = ImmutableSet.of(Objs.POLL_BOOTH, Objs.POLL_BOOTH_26796, Objs.POLL_B
         Objs.POLL_BOOTH_26809, Objs.POLL_BOOTH_26810, Objs.POLL_BOOTH_26811, Objs.POLL_BOOTH_26812,
         Objs.POLL_BOOTH_32546, Objs.POLL_BOOTH_32547, Objs.POLL_BOOTH_33481)
 
-BOOTHS.forEach { booth ->
-    on_obj_option(obj = booth, option = "use") {
-        open_poll_history(player)
-    }
+BOOTHS.forEach1 { booth ->
+    on_obj_option(
+            obj = booth,
+            option = "use",
+            logic = fun Plugin.() {
+                open_poll_history(player)
+            }
+    )
 }
 
 fun open_poll_history(p: Player) {

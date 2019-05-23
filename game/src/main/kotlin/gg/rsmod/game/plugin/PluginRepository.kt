@@ -12,11 +12,7 @@ import gg.rsmod.game.model.container.key.BANK_KEY
 import gg.rsmod.game.model.container.key.ContainerKey
 import gg.rsmod.game.model.container.key.EQUIPMENT_KEY
 import gg.rsmod.game.model.container.key.INVENTORY_KEY
-import gg.rsmod.game.model.entity.DynamicObject
-import gg.rsmod.game.model.entity.GroundItem
-import gg.rsmod.game.model.entity.Npc
-import gg.rsmod.game.model.entity.Pawn
-import gg.rsmod.game.model.entity.Player
+import gg.rsmod.game.model.entity.*
 import gg.rsmod.game.model.shop.Shop
 import gg.rsmod.game.model.timer.TimerKey
 import gg.rsmod.game.service.Service
@@ -223,6 +219,12 @@ class PluginRepository(val world: World) {
     private val groundItemPlugins = Int2ObjectOpenHashMap<Int2ObjectOpenHashMap<Plugin.() -> Unit>>()
 
     /**
+     * A map that contains Boolean functions that will return false when a ground
+     * item can not be picked up.
+     */
+    private val groundItemPickupConditions = Int2ObjectOpenHashMap<Plugin.() -> Boolean>()
+
+    /**
      * A map of plugins that check if an item with the associated key, can be
      * dropped on the floor.
      */
@@ -247,6 +249,14 @@ class PluginRepository(val world: World) {
      * Value: plugin
      */
     private val itemOnItemPlugins = Int2ObjectOpenHashMap<Plugin.() -> Unit>()
+
+    /**
+     * A map that contains item on ground item plugins.
+     *
+     * Key: (invItem << 16) | groundItem
+     * Value: plugin
+     */
+    private val itemOnGroundItemPlugins = Int2ObjectOpenHashMap<Plugin.() -> Unit>()
 
     /**
      * A map that contains magic spell on item plugins.
@@ -1025,6 +1035,21 @@ class PluginRepository(val world: World) {
         return true
     }
 
+    fun setGroundItemPickupCondition(item: Int, plugin: Plugin.() -> Boolean) {
+        if (groundItemPickupConditions.containsKey(item)) {
+            val error = IllegalStateException("Ground item pick-up condition already set: $item")
+            logger.error(error) {}
+            throw error
+        }
+        groundItemPickupConditions[item] = plugin
+        pluginCount++
+    }
+
+    fun canPickupGroundItem(p: Player, item: Int): Boolean {
+        val plugin = groundItemPickupConditions[item] ?: return true
+        return p.executePlugin(plugin)
+    }
+
     fun bindCanItemDrop(item: Int, plugin: Plugin.() -> Boolean) {
         if (canDropItemPlugins.containsKey(item)) {
             logger.error("Item already bound to a 'can-drop' plugin: $item")
@@ -1066,7 +1091,7 @@ class PluginRepository(val world: World) {
     }
 
     fun bindItemOnItem(item1: Int, item2: Int, plugin: Plugin.() -> Unit) {
-        val max = Math.min(item1, item2)
+        val max = Math.max(item1, item2)
         val min = Math.min(item1, item2)
 
         val hash = (max shl 16) or min
@@ -1081,11 +1106,29 @@ class PluginRepository(val world: World) {
     }
 
     fun executeItemOnItem(p: Player, item1: Int, item2: Int): Boolean {
-        val max = Math.min(item1, item2)
+        val max = Math.max(item1, item2)
         val min = Math.min(item1, item2)
 
         val hash = (max shl 16) or min
         val plugin = itemOnItemPlugins[hash] ?: return false
+        p.executePlugin(plugin)
+        return true
+    }
+
+    fun bindItemOnGroundItem(invItem: Int, groundItem: Int, plugin: Plugin.() -> Unit) {
+        val hash = (invItem shl 16) or groundItem
+        if (itemOnGroundItemPlugins.containsKey(hash)) {
+            val error = IllegalStateException("Item on Item pair is already bound to a plugin: [inv_item=$invItem, ground_item=$groundItem]")
+            logger.error(error) {}
+            throw error
+        }
+        itemOnGroundItemPlugins[hash] = plugin
+        pluginCount++
+    }
+
+    fun executeItemOnGroundItem(p: Player, invItem: Int, groundItem: Int): Boolean {
+        val hash = (invItem shl 16) or groundItem
+        val plugin = itemOnGroundItemPlugins[hash] ?: return false
         p.executePlugin(plugin)
         return true
     }

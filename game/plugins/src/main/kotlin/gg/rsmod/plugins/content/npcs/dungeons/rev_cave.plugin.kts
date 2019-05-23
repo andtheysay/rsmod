@@ -1,11 +1,9 @@
 package gg.rsmod.plugins.content.npcs.kbd
 
-import gg.rsmod.game.model.combat.NpcCombatDef
-
 set_multi_combat_region(region = 12702)
 set_multi_combat_region(region = 12958)
 set_multi_combat_region(region = 12959)
-
+/**
 set_combat_def(Npcs.BLACK_DRAGON, NpcCombatDef.Builder()
         .setHitpoints(190)
         .setAttackSpeed(6)
