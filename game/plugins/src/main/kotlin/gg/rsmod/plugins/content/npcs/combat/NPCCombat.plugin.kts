@@ -81,7 +81,7 @@ suspend fun combat(task: QueueTask, configuration: CombatConfiguration) {
         npc.facePawn(target)
 
         // pick a random method, TODO weighted bag
-        val method = configuration.attackMethods.random()
+        val method = configuration.attackMethods[1]
 
         // first, ensure we are close enough to the target
         if (!this.ensureDistance(task, npc, target, method)) {
@@ -92,13 +92,22 @@ suspend fun combat(task: QueueTask, configuration: CombatConfiguration) {
         npc.graphic(method.attackerGraphic)
         npc.animate(method.attackAnim)
 
-        if (method.hasProjectile()) {
-            // when method has a projectile config, we shoot it at the target
-            this.shootProjectile(npc, target, method)
+        // The damage delay is calculated based on the ase damage delay config
+        // and depending whether the projectile is settled for this method
+        // a damage delay is a sum of a base delay and projectile life span
+        // which is a sum of projectile delay and time it is required for the projectile
+        // to arrive at target tile.
+        val damageDelay = when {
+            method.hasProjectile() -> {
+                // when method has a projectile config, we shoot it at the target
+                val projectile = this.shootProjectile(npc, target, method)
+                method.damageDelay + ((projectile.lifespan / 5.5)).toInt()
+            }
+            else -> method.damageDelay
         }
 
         // deal the damage to the target
-        this.dealDamage(npc, target, method)
+        this.dealDamage(npc, target, method, damageDelay)
 
         /// waiting for the next attack
         task.wait(method.nextAttackDelay)
@@ -111,7 +120,7 @@ suspend fun combat(task: QueueTask, configuration: CombatConfiguration) {
     npc.removeCombatTarget()
 }
 
-fun dealDamage(attacker: Npc, target: Player, method: AttackMethod) {
+fun dealDamage(attacker: Npc, target: Player, method: AttackMethod, delay: Int) {
     val formula = NPCCombatFormula(
             method.startingAttackStyle,
             method.endingAttackStyle,
@@ -119,7 +128,7 @@ fun dealDamage(attacker: Npc, target: Player, method: AttackMethod) {
             method.maxHit
     )
 
-    attacker.dealHit(target, formula, delay = method.damageDelay) { hit ->
+    attacker.dealHit(target, formula, delay) { hit ->
         // when hit lands, check if we should poison the target
         if (hit.landed) {
             this.tryPoisonTarget(target, method.poisonChance, method.poisonDamage)
