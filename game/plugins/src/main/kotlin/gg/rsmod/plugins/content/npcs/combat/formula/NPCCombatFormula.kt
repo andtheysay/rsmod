@@ -23,7 +23,7 @@ class NPCCombatFormula(
     }
 
     override fun getAccuracy(pawn: Pawn, target: Pawn, specialAttackMultiplier: Double): Double {
-        if (this.isTargetProtected(pawn as Player, this.startStyle)) {
+        if (this.isTargetProtected(target as Player, this.startStyle)) {
             return 0.0
         }
         return when (this.endStyle) {

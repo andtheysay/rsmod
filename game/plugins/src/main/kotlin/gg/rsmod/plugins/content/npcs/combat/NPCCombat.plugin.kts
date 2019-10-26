@@ -12,6 +12,8 @@ import gg.rsmod.plugins.content.npcs.combat.configuration.AttackMethod
 import gg.rsmod.plugins.content.npcs.combat.formula.NPCCombatFormula
 
 on_command("combat") {
+    player.getSkills().setBaseLevel(Skills.HITPOINTS, 99)
+    player.getSkills().setBaseLevel(Skills.PRAYER, 99)
     world.spawn(Npc(2, player.tile, world))
 }
 
@@ -128,7 +130,7 @@ fun tryPoisonTarget(target: Player, chance: Double) {
 
 suspend fun ensureDistance(task: QueueTask, attacker: Npc, target: Player, method: AttackMethod): Boolean {
     val attackDistance = method.attackDistance
-    val withinReach = attacker.tile.getDistance(target.tile) > attackDistance
+    val withinReach = attacker.tile.getDistance(target.tile) <= attackDistance
 
     if (!method.moveToAttack) {
         return withinReach
@@ -138,7 +140,7 @@ suspend fun ensureDistance(task: QueueTask, attacker: Npc, target: Player, metho
         attacker.walkTo(task, target.tile)
     }
 
-    return attacker.tile.getDistance(target.tile) > attackDistance
+    return attacker.tile.getDistance(target.tile) <= attackDistance
 }
 
 fun shootProjectile(attacker: Npc, target: Player, method: AttackMethod) {
