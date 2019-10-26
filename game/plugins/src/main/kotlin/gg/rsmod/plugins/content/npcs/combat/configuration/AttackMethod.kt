@@ -1,11 +1,12 @@
 package gg.rsmod.plugins.content.npcs.combat.configuration
 
-import gg.rsmod.game.model.combat.CombatStyle
+import com.google.gson.annotations.SerializedName
+import gg.rsmod.game.model.combat.CombatClass
 
 data class AttackMethod(
         val weight: Double,
-        val startingAttackStyle: CombatStyle,
-        val endingAttackStyle: CombatStyle,
+        val startingAttackStyle: CombatClass,
+        val endingAttackStyle: CombatClass,
         val damageDelay: Int,
         val nextAttackDelay: Int,
         val poisonChance: Double,
@@ -16,5 +17,14 @@ data class AttackMethod(
         val attackAnim: Int,
         val attackSound: Int,
         val attackerGraphic: Int,
-        val targetGraphic: Int
-)
+        val targetGraphic: Int,
+
+        @SerializedName("projectileId")
+        val projectile: Int,
+        val projectileHeight: Int,
+        val projectileStartHeight: Int,
+        val projectileEndHeight: Int,
+        val projectileDelay: Int
+) {
+    fun hasProjectile() = this.projectile != 0
+}
