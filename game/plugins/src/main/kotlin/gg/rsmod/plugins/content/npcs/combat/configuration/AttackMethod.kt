@@ -10,6 +10,7 @@ data class AttackMethod(
         val damageDelay: Int,
         val nextAttackDelay: Int,
         val poisonChance: Double,
+        val poisonDamage: Int,
         val attackDistance: Int,
         val moveToAttack: Boolean,
         val minHit: Int,

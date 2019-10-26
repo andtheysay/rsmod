@@ -59,7 +59,7 @@
       "damageDelay": 2,
       "nextAttackDelay": 3,
       "attackDistance": 7,
-      "projectileId": 10,
+      "projectileId": 49,
       "projectileHeight": 50,
       "projectileDelay": 40,
       "projectileStartHeight": 20,

@@ -1,10 +1,11 @@
 package gg.rsmod.plugins.content.npcs.combat
 
+import gg.rsmod.plugins.content.combat.*
+import gg.rsmod.game.model.attr.*
 import gg.rsmod.plugins.content.mechanics.poison.*
 import gg.rsmod.game.model.queue.QueueTask
 import gg.rsmod.plugins.content.combat.canEngageCombat
 import gg.rsmod.plugins.content.combat.dealHit
-import gg.rsmod.plugins.content.combat.formula.MeleeCombatFormula
 import gg.rsmod.plugins.content.combat.getCombatTarget
 import gg.rsmod.plugins.content.combat.removeCombatTarget
 import gg.rsmod.plugins.content.npcs.combat.configuration.CombatConfiguration
@@ -14,13 +15,11 @@ import gg.rsmod.plugins.content.npcs.combat.formula.NPCCombatFormula
 on_command("combat") {
     player.getSkills().setBaseLevel(Skills.HITPOINTS, 99)
     player.getSkills().setBaseLevel(Skills.PRAYER, 99)
-    world.spawn(Npc(2, player.tile, world))
+    world.spawn(Npc(415, player.tile, world))
 }
 
 on_world_init {
     CombatConfiguration.loadAll().forEach { configuration ->
-        val first = configuration.ids.first()
-        val others = configuration.ids.drop(1).toIntArray()
 
         // Setting base configuration for npc combat
         configuration.ids.forEach { id ->
@@ -56,9 +55,18 @@ on_world_init {
                 }
             }
         }
+        val first = configuration.ids.first()
+        val others = configuration.ids.drop(1).toIntArray()
 
+        /// TODO apparently the npc combat does not take the care
+        /// of holding and keeping the target npc,
+        /// everytime the player attacks npc no matter what the focus target attribute
+        /// is settled to the latest one, meaning that many players will start the npc
+        /// combat at once, i need to move this to more fine-grained combat logic that persists
+        /// the target(s) so the npc can cycle between them or just attack one refusing other
+        /// players to attack it.
         on_npc_combat(first, *others) {
-            npc.queue {
+            this.npc.queue {
                 combat(this, configuration)
             }
         }
@@ -77,15 +85,15 @@ suspend fun combat(task: QueueTask, configuration: CombatConfiguration) {
 
         // first, ensure we are close enough to the target
         if (!this.ensureDistance(task, npc, target, method)) {
-            continue;
+            continue
         }
 
         /// start animating the npc when performing an attack
         npc.graphic(method.attackerGraphic)
         npc.animate(method.attackAnim)
 
-        // when method has a projectile config, we shoot it at the target
         if (method.hasProjectile()) {
+            // when method has a projectile config, we shoot it at the target
             this.shootProjectile(npc, target, method)
         }
 
@@ -111,19 +119,24 @@ fun dealDamage(attacker: Npc, target: Player, method: AttackMethod) {
             method.maxHit
     )
 
-    attacker.dealHit(target, formula = formula, delay = method.damageDelay) { hit ->
+    attacker.dealHit(target, formula, delay = method.damageDelay) { hit ->
         // when hit lands, check if we should poison the target
         if (hit.landed) {
-            this.tryPoisonTarget(target, method.poisonChance)
+            this.tryPoisonTarget(target, method.poisonChance, method.poisonDamage)
         }
         target.graphic(method.targetGraphic)
     }
 }
 
-fun tryPoisonTarget(target: Player, chance: Double) {
+fun tryPoisonTarget(target: Player, chance: Double, damage: Int) {
+    val alreadyPoisoned = (target.attr[POISON_TICKS_LEFT_ATTR] ?: 0) != 0
+    if (alreadyPoisoned) {
+        return
+    }
+
     if (world.random(100) >= chance) {
-        target.poison(8) {
-            target.forceChat("You have been poisoned.")
+        target.poison(damage) {
+            target.message("You have been poisoned.")
         }
     }
 }
@@ -132,18 +145,21 @@ suspend fun ensureDistance(task: QueueTask, attacker: Npc, target: Player, metho
     val attackDistance = method.attackDistance
     val withinReach = attacker.tile.getDistance(target.tile) <= attackDistance
 
+    if (withinReach) {
+        return true
+    }
+
     if (!method.moveToAttack) {
-        return withinReach
+        return false
     }
 
-    if (!withinReach) {
-        attacker.walkTo(task, target.tile)
-    }
-
+    attacker.walkTo(task, target.tile)
+    task.wait(1)
     return attacker.tile.getDistance(target.tile) <= attackDistance
+
 }
 
-fun shootProjectile(attacker: Npc, target: Player, method: AttackMethod) {
+fun shootProjectile(attacker: Npc, target: Player, method: AttackMethod): Projectile {
     val projectile = attacker.createProjectile(
             target,
             method.projectile,
@@ -153,5 +169,5 @@ fun shootProjectile(attacker: Npc, target: Player, method: AttackMethod) {
             15
     )
     world.spawn(projectile)
-
+    return projectile
 }
