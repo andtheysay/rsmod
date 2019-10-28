@@ -47,7 +47,7 @@
       "moveToAttack": true,
       "minHit": 0,
       "maxHit": 10,
-      "damageDelay": 1,
+      "damageDelay": 0,
       "nextAttackDelay": 1,
       "projectileId": 10,
       "projectileStartHeight": 10,

@@ -1,5 +1,6 @@
 package gg.rsmod.plugins.content.npcs.combat
 
+import gg.rsmod.plugins.content.combat.strategy.*
 import gg.rsmod.plugins.content.combat.*
 import gg.rsmod.game.model.attr.*
 import gg.rsmod.plugins.content.mechanics.poison.*
@@ -15,7 +16,7 @@ import gg.rsmod.plugins.content.npcs.combat.formula.NPCCombatFormula
 on_command("combat") {
     player.getSkills().setBaseLevel(Skills.HITPOINTS, 99)
     player.getSkills().setBaseLevel(Skills.PRAYER, 99)
-    world.spawn(Npc(415, player.tile, world))
+    world.spawn(Npc(239, player.tile, world))
 }
 
 on_world_init {
@@ -78,10 +79,8 @@ suspend fun combat(task: QueueTask, configuration: CombatConfiguration) {
     var target = npc.getCombatTarget() as Player? ?: return
 
     while (npc.canEngageCombat(target)) {
-        npc.facePawn(target)
-
         // pick a random method, TODO weighted bag
-        val method = configuration.attackMethods[1]
+        val method = configuration.attackMethods.random()
 
         // first, ensure we are close enough to the target
         if (!this.ensureDistance(task, npc, target, method)) {
@@ -89,28 +88,38 @@ suspend fun combat(task: QueueTask, configuration: CombatConfiguration) {
         }
 
         /// start animating the npc when performing an attack
-        npc.graphic(method.attackerGraphic)
-        npc.animate(method.attackAnim)
+        if (method.attackerGraphic != 0) {
+            npc.graphic(method.attackerGraphic)
+        }
 
-        // The damage delay is calculated based on the ase damage delay config
-        // and depending whether the projectile is settled for this method
-        // a damage delay is a sum of a base delay and projectile life span
-        // which is a sum of projectile delay and time it is required for the projectile
-        // to arrive at target tile.
+        if (method.attackAnim != 0) {
+            npc.animate(method.attackAnim)
+        }
+
+        /// The damage delay is calculated based on the ase damage delay config
+        /// and depending whether the projectile is settled for this method
+        /// a damage delay is a sum of a base delay and projectile life span
+        /// which is a sum of projectile delay and time it is required for the projectile
+        /// to arrive at target tile.
         val damageDelay = when {
             method.hasProjectile() -> {
                 // when method has a projectile config, we shoot it at the target
-                val projectile = this.shootProjectile(npc, target, method)
-                method.damageDelay + ((projectile.lifespan / 5.5)).toInt()
+                this.shootProjectile(npc, target, method)
+                val frontTargetTile = npc.getFrontFacingTile(target)
+                val targetCentreTile = target.getCentreTile()
+                val projectileHitDelay = RangedCombatStrategy.getHitDelay(frontTargetTile, targetCentreTile)
+                method.damageDelay + projectileHitDelay
             }
             else -> method.damageDelay
         }
 
-        // deal the damage to the target
+        /// deal the damage to the target
         this.dealDamage(npc, target, method, damageDelay)
 
         /// waiting for the next attack
-        task.wait(method.nextAttackDelay)
+        if (method.nextAttackDelay > 0) {
+            task.wait(method.nextAttackDelay)
+        }
 
         // ensuring the target is still available
         target = npc.getCombatTarget() as Player? ?: break
@@ -133,11 +142,18 @@ fun dealDamage(attacker: Npc, target: Player, method: AttackMethod, delay: Int) 
         if (hit.landed) {
             this.tryPoisonTarget(target, method.poisonChance, method.poisonDamage)
         }
-        target.graphic(method.targetGraphic)
+
+        if (method.targetGraphic != 0) {
+            target.graphic(method.targetGraphic)
+        }
     }
 }
 
 fun tryPoisonTarget(target: Player, chance: Double, damage: Int) {
+    if (chance == 0.0) {
+        return
+    }
+
     val alreadyPoisoned = (target.attr[POISON_TICKS_LEFT_ATTR] ?: 0) != 0
     if (alreadyPoisoned) {
         return
@@ -158,12 +174,15 @@ suspend fun ensureDistance(task: QueueTask, attacker: Npc, target: Player, metho
         return true
     }
 
+    /// TODO when config specifies minimum distance to attack
+    /// and is also specifying that it should not move to an attack
+    /// what should happen in this scenario? should it just assume that
+    /// attack is ok to perform?
     if (!method.moveToAttack) {
-        return false
+        return true
     }
 
     attacker.walkTo(task, target.tile)
-    task.wait(1)
     return attacker.tile.getDistance(target.tile) <= attackDistance
 
 }
