@@ -28,13 +28,34 @@
   "deathSound": 65535,
   "attackMethods": [
     {
+      "name": "Melee attack",
+      "startingAttackStyle": "MELEE",
+      "endingAttackStyle": "MELEE",
+      "attackAnim": 91,
+      "moveToAttack": true,
+      "attackDistance": 1,
+      "nextAttackDelay": 3,
+      "minHit": 0,
+      "maxHit": 1
+    },
+     {
+      "name": "Melee attack 2",
+      "startingAttackStyle": "MELEE",
+      "endingAttackStyle": "MELEE",
+      "attackAnim": 80,
+      "moveToAttack": true,
+      "attackDistance": 1,
+      "nextAttackDelay": 3,
+      "minHit": 0,
+      "maxHit": 1
+    },
+    {
       "name": "Fire attack",
       "startingAttackStyle": "MAGIC",
       "endingAttackStyle": "MAGIC",
       "nextAttackDelay": 3,
       "moveToAttack": false,
       "attackAnim": 81,
-      "attackDistance": 1,
       "damageDelay": 0,
       "minHit": 0,
       "maxHit": 1,

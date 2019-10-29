@@ -79,10 +79,11 @@ suspend fun combat(task: QueueTask, configuration: CombatConfiguration) {
     var target = npc.getCombatTarget() as Player? ?: return
 
     while (npc.canEngageCombat(target)) {
-        // pick a random method, TODO weighted bag
+        npc.facePawn(target)
+        /// pick a random method, TODO weighted bag
         val method = configuration.attackMethods.random()
 
-        // first, ensure we are close enough to the target
+        /// first, ensure we are close enough to the target
         if (!this.ensureDistance(task, npc, target, method)) {
             continue
         }
@@ -121,7 +122,7 @@ suspend fun combat(task: QueueTask, configuration: CombatConfiguration) {
             task.wait(method.nextAttackDelay)
         }
 
-        // ensuring the target is still available
+        /// ensuring the target is still available
         target = npc.getCombatTarget() as Player? ?: break
     }
 
