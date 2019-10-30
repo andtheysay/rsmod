@@ -3,6 +3,7 @@ package gg.rsmod.plugins.content.npcs.combat.configuration
 import com.google.gson.Gson
 import com.google.gson.annotations.SerializedName
 import gg.rsmod.plugins.api.NpcSpecies
+import gg.rsmod.plugins.content.npcs.combat.configuration.attack.NPCAttackConfiguration
 import java.io.BufferedReader
 import java.io.File
 import java.io.FileReader
@@ -11,37 +12,16 @@ import java.nio.file.Paths
 data class NPCCombatConfiguration(
         val name: String,
         val ids: Set<Int>,
-        @SerializedName("npcspecies")
         val species: List<NpcSpecies>,
-        val attackSpeed: Int,
-        val respawnDelay: Int,
-
-        val combatLevel: Int,
-        val hitpoints: Int,
-        val attack: Int,
-        val strength: Int,
-        val defence: Int,
-        val magic: Int,
-        val ranged: Int,
-
-        val defenceStabBonus: Int,
-        val defenceSlashBonus: Int,
-        val defenceCrushBonus: Int,
-        val defenceMagicBonus: Int,
-        val defenceRangedBonus: Int,
-
-        val blockAnim: Int,
-
-        val deathAnim: Int,
-        val deathSound: Int,
-
-        val aggroRadius: Int,
-        val aggroSearchDelay: Int,
-        val aggroTimer: Int,
-
         val slayerXP: Int,
-
-        val attackMethods: List<NPCAttackConfiguration>
+        val attackSpeed: Int,
+        val respawn: NPCCombatRespawnConfiguration,
+        val stats: NPCCombatStats,
+        val defenceBonuses: NPCCombatDefenceBonuses,
+        val death: NPCCombatDeathConfiguration,
+        val aggression: NPCCombatAggressionConfiguration,
+        val attacks: List<NPCAttackConfiguration>,
+        val block: NPCCombatBlockConfiguration
 ) {
 
     companion object {

@@ -10,23 +10,25 @@ class BaseCombatDefinitionBuilder(val configuration: NPCCombatConfiguration) {
         val builder = NpcCombatDsl.Builder()
         builder.apply {
             this.stats {
-                this.hitpoints = configuration.hitpoints
-                this.attack = configuration.attack
-                this.defence = configuration.defence
-                this.strength = configuration.strength
-                this.magic = configuration.magic
-                this.ranged = configuration.ranged
+                val stats = configuration.stats
+                this.hitpoints = stats.hitpoints
+                this.attack = stats.attack
+                this.defence = stats.defence
+                this.strength = stats.strength
+                this.magic = stats.magic
+                this.ranged = stats.ranged
             }
 
             this.aggro {
-                this.radius = configuration.aggroRadius
-                this.searchDelay = configuration.aggroSearchDelay
-                this.aggroTimer = configuration.aggroTimer
+                val aggression = configuration.aggression
+                this.radius = aggression.radius
+                this.searchDelay = aggression.searchDelay
+                this.aggroTimer = aggression.timer
             }
 
             this.anims {
-                this.block = configuration.blockAnim
-                this.death = configuration.deathAnim
+                this.block = configuration.block.animation
+                this.death = configuration.death.animation
             }
 
             this.species {
@@ -34,7 +36,7 @@ class BaseCombatDefinitionBuilder(val configuration: NPCCombatConfiguration) {
             }
 
             this.configs {
-                this.respawnDelay = configuration.respawnDelay
+                this.respawnDelay = configuration.respawn.delay
                 this.attackSpeed = configuration.attackSpeed
             }
         }

@@ -3,15 +3,14 @@ package gg.rsmod.plugins.content.npcs.combat.core.attack
 import gg.rsmod.game.model.World
 import gg.rsmod.game.model.entity.Npc
 import gg.rsmod.game.model.entity.Player
-import gg.rsmod.game.model.path.Route
 import gg.rsmod.game.model.queue.QueueTask
 import gg.rsmod.plugins.api.ext.createProjectile
 import gg.rsmod.plugins.content.combat.moveToAttackRange
 import gg.rsmod.plugins.content.combat.strategy.RangedCombatStrategy
-import gg.rsmod.plugins.content.npcs.combat.configuration.NPCAttackConfiguration
+import gg.rsmod.plugins.content.npcs.combat.configuration.attack.NPCAttackConfiguration
+import gg.rsmod.plugins.content.npcs.combat.configuration.attack.projectile.NPCAttackProjectileConfiguration
 import gg.rsmod.plugins.content.npcs.combat.core.attack.hit.NPCHit
 import gg.rsmod.plugins.content.npcs.combat.core.attack.hit.NPCHitFactory
-import kotlinx.coroutines.awaitAll
 import org.apache.logging.log4j.LogManager
 
 class NPCAttack(
@@ -30,8 +29,8 @@ class NPCAttack(
             return false
         }
         this.animateNpc()
-        if (this.isProjectileAttack()) {
-            this.shootProjectileAtTarget()
+        this.configuration.projectile?.let { cfg ->
+            this.shootProjectileAtTarget(cfg)
         }
         val hit = this.prepareTargetHit()
         hit.execute()
@@ -60,7 +59,7 @@ class NPCAttack(
      * Checks whether this attack can walk npc towards the target
      */
     private fun canWalkTowardsTarget(): Boolean {
-        return this.configuration.moveToAttack
+        return this.configuration.move.required
     }
 
     /**
@@ -77,25 +76,25 @@ class NPCAttack(
      * Checks whether the target is within reach of this attack
      */
     private fun isTargetWithinReach(): Boolean {
-        return this.npc.tile.getDistance(this.target.tile) <= this.configuration.attackDistance
+        return this.npc.tile.getDistance(this.target.tile) <= this.configuration.move.distance
     }
 
     /**
      * Get the required distance of this attack
      */
-    private fun getRequiredDistance() = this.configuration.attackDistance
+    private fun getRequiredDistance() = this.configuration.move.distance
 
     /**
      * Animates the npc with this attack animations
      */
     private fun animateNpc() {
-        val attackerGraphic = this.configuration.attackerGraphic
+        val attackerGraphic = this.configuration.graphic
 
         if (attackerGraphic != 0) {
             this.npc.graphic(attackerGraphic)
         }
 
-        val attackAnim = this.configuration.attackAnim
+        val attackAnim = this.configuration.animation
         if (attackAnim != 0) {
             this.npc.animate(attackAnim)
         }
@@ -107,7 +106,7 @@ class NPCAttack(
     private fun prepareTargetHit(): NPCHit {
         LOG.debug("${this.npc} is preparing to hit ${this.target}")
         val hitDelay = this.getTargetHitDelay();
-        return NPCHitFactory.create(this.world, this.npc, this.target, this.configuration, hitDelay)
+        return NPCHitFactory.create(this.world, this.npc, this.target, this.configuration.hit, hitDelay)
     }
 
     /**
@@ -118,7 +117,7 @@ class NPCAttack(
      * to arrive at target tile.
      **/
     private fun getTargetHitDelay(): Int {
-        val baseDelay = this.configuration.damageDelay
+        val baseDelay = this.configuration.hit.delay
         return when {
             this.isProjectileAttack() -> baseDelay + this.getProjectileHitDelay()
             else -> baseDelay
@@ -145,14 +144,14 @@ class NPCAttack(
     /**
      * Shoots the projectile target a target
      */
-    private fun shootProjectileAtTarget() {
+    private fun shootProjectileAtTarget(cfg: NPCAttackProjectileConfiguration) {
         LOG.debug("${this.npc} is shooting projectile at ${this.target}")
         val projectile = this.npc.createProjectile(
                 this.target,
-                this.configuration.projectile,
-                this.configuration.projectileStartHeight,
-                this.configuration.projectileEndHeight,
-                this.configuration.projectileDelay,
+                cfg.id,
+                cfg.startHeight,
+                cfg.endHeight,
+                cfg.delay,
                 15
         )
         this.world.spawn(projectile)

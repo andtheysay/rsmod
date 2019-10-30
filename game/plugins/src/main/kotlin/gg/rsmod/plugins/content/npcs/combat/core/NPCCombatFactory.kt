@@ -7,6 +7,6 @@ import gg.rsmod.plugins.content.npcs.combat.configuration.NPCCombatConfiguration
 
 object NPCCombatFactory {
     fun create(task: QueueTask, world: World, npc: Npc, configuration: NPCCombatConfiguration): NPCCombat {
-        return NPCCombat(task, world, npc, configuration.attackMethods)
+        return NPCCombat(task, world, npc, configuration.attacks)
     }
 }

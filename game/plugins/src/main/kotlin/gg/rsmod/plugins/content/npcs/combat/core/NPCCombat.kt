@@ -7,7 +7,7 @@ import gg.rsmod.game.model.queue.QueueTask
 import gg.rsmod.plugins.content.combat.canEngageCombat
 import gg.rsmod.plugins.content.combat.getCombatTarget
 import gg.rsmod.plugins.content.combat.removeCombatTarget
-import gg.rsmod.plugins.content.npcs.combat.configuration.NPCAttackConfiguration
+import gg.rsmod.plugins.content.npcs.combat.configuration.attack.NPCAttackConfiguration
 import gg.rsmod.plugins.content.npcs.combat.core.attack.NPCAttackFactory
 import gg.rsmod.plugins.content.npcs.combat.core.attack.NPCAttack
 import org.apache.logging.log4j.LogManager
@@ -38,7 +38,7 @@ class NPCCombat(
 
     private fun prepareNextAttack(target: Player): NPCAttack {
         LOG.debug("${this.npc} is preparing attack towards ${target}")
-        val nextAttackConfiguration = this.attackConfigurations.first()
+        val nextAttackConfiguration = this.attackConfigurations.random()
         return NPCAttackFactory.create(this.task, this.world, this.npc, target, nextAttackConfiguration)
     }
 
