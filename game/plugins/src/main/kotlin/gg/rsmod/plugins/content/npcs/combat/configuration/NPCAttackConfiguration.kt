@@ -3,7 +3,7 @@ package gg.rsmod.plugins.content.npcs.combat.configuration
 import com.google.gson.annotations.SerializedName
 import gg.rsmod.game.model.combat.CombatClass
 
-data class AttackMethod(
+data class NPCAttackConfiguration(
         val weight: Double,
         val startingAttackStyle: CombatClass,
         val endingAttackStyle: CombatClass,

@@ -8,7 +8,7 @@ import java.io.File
 import java.io.FileReader
 import java.nio.file.Paths
 
-data class CombatConfiguration(
+data class NPCCombatConfiguration(
         val name: String,
         val ids: Set<Int>,
         @SerializedName("npcspecies")
@@ -41,7 +41,7 @@ data class CombatConfiguration(
 
         val slayerXP: Int,
 
-        val attackMethods: List<AttackMethod>
+        val attackMethods: List<NPCAttackConfiguration>
 ) {
 
     companion object {
@@ -51,7 +51,7 @@ data class CombatConfiguration(
         /**
          * Loads all the configuration from json files placed under path
          */
-        fun loadAll(directory: String = DEFAULT_CONFIGURATION_DIRECTORY): List<CombatConfiguration> {
+        fun loadAll(directory: String = DEFAULT_CONFIGURATION_DIRECTORY): List<NPCCombatConfiguration> {
             return (Paths.get(directory).toFile().listFiles() ?: emptyArray<File>())
                     .filter { it.name.endsWith(".json") }
                     .map(::load)
@@ -60,9 +60,9 @@ data class CombatConfiguration(
         /**
          *  Loads the configuration from json file
          */
-        fun load(file: File): CombatConfiguration {
+        fun load(file: File): NPCCombatConfiguration {
             val reader = BufferedReader(FileReader(file))
-            return GSON.fromJson(reader, CombatConfiguration::class.java)
+            return GSON.fromJson(reader, NPCCombatConfiguration::class.java)
         }
     }
 }
