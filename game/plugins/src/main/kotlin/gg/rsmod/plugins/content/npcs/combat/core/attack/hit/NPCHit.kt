@@ -2,6 +2,7 @@ package gg.rsmod.plugins.content.npcs.combat.core.attack.hit
 
 import gg.rsmod.game.model.World
 import gg.rsmod.game.model.entity.Npc
+import gg.rsmod.game.model.entity.Pawn
 import gg.rsmod.game.model.entity.Player
 import gg.rsmod.plugins.content.combat.dealHit
 import gg.rsmod.plugins.content.npcs.combat.configuration.attack.hit.NPCTargetHitConfiguration
@@ -12,7 +13,7 @@ import gg.rsmod.plugins.content.npcs.combat.formula.NPCCombatFormula
 class NPCHit(
         private val world: World,
         private val npc: Npc,
-        private val target: Player,
+        private val target: Pawn,
         private val configuration: NPCTargetHitConfiguration,
         private val delay: Int
 ) {

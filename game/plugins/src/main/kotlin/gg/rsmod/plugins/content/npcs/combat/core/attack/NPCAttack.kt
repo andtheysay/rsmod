@@ -2,6 +2,7 @@ package gg.rsmod.plugins.content.npcs.combat.core.attack
 
 import gg.rsmod.game.model.World
 import gg.rsmod.game.model.entity.Npc
+import gg.rsmod.game.model.entity.Pawn
 import gg.rsmod.game.model.entity.Player
 import gg.rsmod.game.model.queue.QueueTask
 import gg.rsmod.plugins.api.ext.createProjectile
@@ -17,7 +18,7 @@ class NPCAttack(
         private val task: QueueTask,
         private val world: World,
         private val npc: Npc,
-        private val target: Player,
+        private val target: Pawn,
         private val configuration: NPCAttackConfiguration
 ) {
 

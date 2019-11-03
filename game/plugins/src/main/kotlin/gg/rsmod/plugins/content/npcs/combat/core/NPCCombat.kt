@@ -2,6 +2,7 @@ package gg.rsmod.plugins.content.npcs.combat.core
 
 import gg.rsmod.game.model.World
 import gg.rsmod.game.model.entity.Npc
+import gg.rsmod.game.model.entity.Pawn
 import gg.rsmod.game.model.entity.Player
 import gg.rsmod.game.model.queue.QueueTask
 import gg.rsmod.plugins.content.combat.canEngageCombat
@@ -36,7 +37,7 @@ class NPCCombat(
         this.npc.removeCombatTarget()
     }
 
-    private fun prepareNextAttack(target: Player): NPCAttack {
+    private fun prepareNextAttack(target: Pawn): NPCAttack {
         LOG.debug("${this.npc} is preparing attack towards ${target}")
         val nextAttackConfiguration = this.attackConfigurations.random()
         return NPCAttackFactory.create(this.task, this.world, this.npc, target, nextAttackConfiguration)
