@@ -1,4 +1,5 @@
-package gg.rsmod.plugins.content.mechanics.poison
+package gg.rsmod.plugins.content.mechanics.effect.poison
+import gg.rsmod.plugins.content.mechanics.effect.*
 
 import gg.rsmod.game.model.attr.POISON_TICKS_LEFT_ATTR
 import gg.rsmod.game.model.timer.POISON_TIMER
@@ -7,7 +8,7 @@ val POISON_TICK_DELAY = 25
 
 on_player_death {
     player.timers.remove(POISON_TIMER)
-    Poison.setHpOrb(player, Poison.OrbState.NONE)
+    player.setHpOrb(OrbState.NONE)
 }
 
 on_timer(POISON_TIMER) {
@@ -16,7 +17,7 @@ on_timer(POISON_TIMER) {
 
     if (ticksLeft == 0) {
         if (pawn is Player) {
-            Poison.setHpOrb(pawn, Poison.OrbState.NONE)
+            pawn.setHpOrb(OrbState.NONE)
         }
         return@on_timer
     }

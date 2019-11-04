@@ -10,6 +10,11 @@ on_command("combat") {
     world.spawn(Npc(239, player.tile, world))
 }
 
+on_command("venom_test") {
+    player.getSkills().setBaseLevel(Skills.HITPOINTS, 99)
+    player.getSkills().setBaseLevel(Skills.PRAYER, 99)
+    world.spawn(Npc(1119, player.tile, world))
+}
 on_world_init {
     NPCCombatConfiguration.loadAll().forEach { configuration ->
         setupBaseDefinition(configuration)

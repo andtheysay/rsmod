@@ -1,4 +1,4 @@
-package gg.rsmod.plugins.content.mechanics.poison
+package gg.rsmod.plugins.content.mechanics.effect.poison
 
 import gg.rsmod.game.model.attr.POISON_TICKS_LEFT_ATTR
 import gg.rsmod.game.model.entity.Npc
@@ -14,8 +14,6 @@ import gg.rsmod.plugins.api.ext.setVarp
  * @author Tom <rspsmods@gmail.com>
  */
 object Poison {
-
-    private const val HP_ORB_VARP = 102
 
     fun getDamageForTicks(ticks: Int) = (ticks / 5) + 1
 
@@ -37,18 +35,5 @@ object Poison {
         return true
     }
 
-    fun setHpOrb(player: Player, state: OrbState) {
-        val value = when (state) {
-            Poison.OrbState.NONE -> 0
-            Poison.OrbState.POISON -> 1
-            Poison.OrbState.VENOM -> 1_000_000
-        }
-        player.setVarp(HP_ORB_VARP, value)
-    }
 
-    enum class OrbState {
-        NONE,
-        POISON,
-        VENOM
-    }
 }

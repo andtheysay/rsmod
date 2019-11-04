@@ -44,6 +44,10 @@ class NPCHit(
                     .map(NPCHitEffectFactory::create)
                     .forEach { it.apply(this.target) }
         }
+        effects
+                .filter { it.predicate == HitEffectPredicate.Either }
+                .map(NPCHitEffectFactory::create)
+                .forEach { it.apply(this.target) }
 
     }
 }
