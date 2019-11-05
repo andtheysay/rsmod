@@ -11,3 +11,9 @@ fun Pawn.applyPoison(initialDamage: Int, onPoison: () -> Unit) {
         onPoison();
     }
 }
+
+fun Pawn.applyVenom(initialDamage: Int, onVenom: () -> Unit) {
+    if (Poison.applyPoison(this, initialDamage, PoisonKind.Venom)) {
+        onVenom();
+    }
+}
