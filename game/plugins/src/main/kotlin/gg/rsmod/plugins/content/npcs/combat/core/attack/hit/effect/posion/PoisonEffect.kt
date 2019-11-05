@@ -9,13 +9,12 @@ import gg.rsmod.plugins.content.npcs.combat.core.attack.hit.effect.NPCHitEffect
 
 class PoisonEffect(private val cfg: PoisonEffectConfiguration) : NPCHitEffect {
     override fun apply(target: Pawn) {
-        (target as? Player)?.let {
-            if (target.world.random(100) <= this.cfg.chance) {
-                target.applyPoison(this.cfg.damage) {
+        if (target.world.random(100) <= this.cfg.chance) {
+            target.applyPoison(this.cfg.damage) {
+                (target as? Player)?.let {
                     target.message("You have been poisoned")
                 }
             }
         }
-
     }
 }
