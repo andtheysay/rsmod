@@ -32,7 +32,7 @@ enum class PoisonKind(val hitKind: HitType) {
     }
 
     companion object {
-        fun getByVarValue(value: Int): PoisonKind {
+        fun getByHitValue(value: Int): PoisonKind {
             return when {
                 value >= 1_000_000 -> Venom
                 else -> Regular

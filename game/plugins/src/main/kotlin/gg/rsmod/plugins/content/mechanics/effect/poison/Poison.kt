@@ -26,7 +26,8 @@ object Poison {
      *         false whether the poison has not been applied due to immunity or pending poison
      */
     fun applyPoison(pawn: Pawn, initialDamage: Int, kind: PoisonKind): Boolean {
-        if (this.isAppliedTo(pawn)) {
+        val appliedKind = this.getOf(pawn)
+        if (appliedKind == kind || appliedKind == PoisonKind.Venom) {
             return false
         }
         if (this.isImmune(pawn)) {
@@ -36,9 +37,8 @@ object Poison {
             }
             return false
         }
-
         val initialValue = kind.getVarValue(initialDamage)
-        this.setHitValueFor(pawn, initialValue)
+        this.updateHitValueFor(pawn, initialValue)
         this.scheduleNextHitFor(pawn)
         return true
     }
@@ -58,11 +58,20 @@ object Poison {
         return pawn.attr.has(HIT_VALUE)
     }
 
+    private fun getOf(pawn: Pawn): PoisonKind? {
+        if (!this.isAppliedTo(pawn)) {
+            return null
+        }
+        val hitValue = this.getHitValueOf(pawn)
+        return PoisonKind.getByHitValue(hitValue)
+    }
+
     /**
      * Sets a hit (varp) value for a pawn
      */
-    private fun setHitValueFor(pawn: Pawn, value: Int) {
+    private fun updateHitValueFor(pawn: Pawn, value: Int) {
         pawn.attr[HIT_VALUE] = value
+        (pawn as? Player)?.let(this::updatePlayerOrb)
     }
 
     /**
@@ -93,14 +102,14 @@ object Poison {
      */
     fun applyNextHitFor(pawn: Pawn) {
         val hitValue = getHitValueOf(pawn)
-        val kind = PoisonKind.getByVarValue(hitValue)
+        val kind = PoisonKind.getByHitValue(hitValue)
 
         val damage = kind.getDamageForVarValue(hitValue)
         val hitValueDelta = kind.getDamageDeltaPerHit()
 
         pawn.hit(damage = damage, type = kind.hitKind)
 
-        this.setHitValueFor(pawn, hitValue + hitValueDelta)
+        this.updateHitValueFor(pawn, hitValue + hitValueDelta)
         this.scheduleNextHitFor(pawn)
     }
 
