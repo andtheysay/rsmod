@@ -15,6 +15,10 @@ on_command("venom_test") {
     player.getSkills().setBaseLevel(Skills.PRAYER, 99)
     world.spawn(Npc(1119, player.tile, world))
 }
+on_command("disease") {
+    player.setVarp(456, 50)
+}
+
 on_world_init {
     NPCCombatConfiguration.loadAll().forEach { configuration ->
         setupBaseDefinition(configuration)

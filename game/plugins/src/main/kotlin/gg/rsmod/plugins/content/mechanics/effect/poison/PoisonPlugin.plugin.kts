@@ -1,33 +1,17 @@
 package gg.rsmod.plugins.content.mechanics.effect.poison
-import gg.rsmod.plugins.content.mechanics.effect.*
 
-import gg.rsmod.game.model.attr.POISON_TICKS_LEFT_ATTR
-import gg.rsmod.game.model.timer.POISON_TIMER
-
-val POISON_TICK_DELAY = 25
-
-on_player_death {
-    player.timers.remove(POISON_TIMER)
-    player.setHpOrb(OrbState.NONE)
+on_command("venom_me") {
+    Poison.applyPoison(player, 6, PoisonKind.Venom)
 }
 
-on_timer(POISON_TIMER) {
-    val pawn = pawn
-    val ticksLeft = pawn.attr[POISON_TICKS_LEFT_ATTR] ?: 0
+on_command("poison_me") {
+    Poison.applyPoison(player, 6, PoisonKind.Regular)
+}
 
-    if (ticksLeft == 0) {
-        if (pawn is Player) {
-            pawn.setHpOrb(OrbState.NONE)
-        }
-        return@on_timer
-    }
+on_player_death {
+    Poison.removeFrom(player)
+}
 
-    if (ticksLeft > 0) {
-        pawn.attr[POISON_TICKS_LEFT_ATTR] = ticksLeft - 1
-        pawn.hit(damage = Poison.getDamageForTicks(ticksLeft), type = HitType.POISON)
-    } else if (ticksLeft < 0) {
-        pawn.attr[POISON_TICKS_LEFT_ATTR] = ticksLeft + 1
-    }
-
-    pawn.timers[POISON_TIMER] = POISON_TICK_DELAY
+on_timer(Poison.HIT_TIMER) {
+    Poison.applyNextHitFor(pawn)
 }
