@@ -7,5 +7,7 @@ import gg.rsmod.game.model.entity.Pawn
  */
 
 fun Pawn.applyPoison(initialDamage: Int, onPoison: () -> Unit) {
-
+    if (Poison.applyPoison(this, initialDamage, PoisonKind.Regular)) {
+        onPoison();
+    }
 }
