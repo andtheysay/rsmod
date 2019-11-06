@@ -17,7 +17,7 @@ import gg.rsmod.plugins.api.ext.setVarp
 object Poison {
     const val POSION_VARP = 102
     val HIT_TIMER = TimerKey()
-    private const val HIT_DELAY = 18
+    private const val HIT_DELAY = 1
     private val HIT_VALUE = AttributeKey<Int>(persistenceKey = "posion_varp", resetOnDeath = true)
 
     /**
@@ -47,7 +47,7 @@ object Poison {
      * Removes the poison from a pawn
      */
     fun removeFrom(pawn: Pawn) {
-        pawn.attr.remove(HIT_VALUE)
+        this.updateHitValueFor(pawn, 0)
         pawn.timers.remove(HIT_TIMER)
     }
 
@@ -55,7 +55,7 @@ object Poison {
      * Checks whether the pawn is currently poisoned
      */
     private fun isAppliedTo(pawn: Pawn): Boolean {
-        return pawn.attr.has(HIT_VALUE)
+        return this.getHitValueOf(pawn) > 0
     }
 
     private fun getOf(pawn: Pawn): PoisonKind? {
@@ -109,7 +109,16 @@ object Poison {
 
         pawn.hit(damage = damage, type = kind.hitKind)
 
-        this.updateHitValueFor(pawn, hitValue + hitValueDelta)
+        val nextHitValue = hitValue + hitValueDelta
+        this.updateHitValueFor(pawn, nextHitValue)
+
+        when {
+            kind == PoisonKind.Regular && nextHitValue <= 0 -> {
+                this.removeFrom(pawn)
+                return
+            }
+        }
+
         this.scheduleNextHitFor(pawn)
     }
 

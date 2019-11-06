@@ -2,6 +2,7 @@ package gg.rsmod.plugins.content.mechanics.effect.poison
 
 import gg.rsmod.plugins.api.HitType
 import kotlin.math.ceil
+import kotlin.math.min
 
 enum class PoisonKind(val hitKind: HitType) {
     Regular(HitType.POISON),
@@ -18,7 +19,7 @@ enum class PoisonKind(val hitKind: HitType) {
     fun getDamageForVarValue(value: Int): Int {
         return when (this) {
             Regular -> ceil(value / 5.0).toInt()
-            Venom -> (value - 1_000_000) * 2
+            Venom -> min(20, (value - 1_000_000) * 2)
         }
     }
 
