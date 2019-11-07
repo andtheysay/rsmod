@@ -48,7 +48,7 @@ object Poison {
      */
     fun removeFrom(pawn: Pawn) {
         this.updateHitValueFor(pawn, 0)
-        pawn.timers.remove(HIT_TIMER)
+        pawn.timers[HIT_TIMER] = 0
     }
 
     /**
