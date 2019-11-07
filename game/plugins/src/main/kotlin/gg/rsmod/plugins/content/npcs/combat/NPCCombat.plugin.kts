@@ -7,7 +7,7 @@ import gg.rsmod.plugins.content.npcs.combat.core.*
 on_command("combat") {
     player.getSkills().setBaseLevel(Skills.HITPOINTS, 99)
     player.getSkills().setBaseLevel(Skills.PRAYER, 99)
-    world.spawn(Npc(239, player.tile, world))
+    player.moveTo(Tile(2274,4698))
 }
 
 on_command("venom_test") {

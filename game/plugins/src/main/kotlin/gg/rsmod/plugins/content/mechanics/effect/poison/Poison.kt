@@ -101,6 +101,10 @@ object Poison {
      * Applies next poison hit for specific pawn
      */
     fun applyNextHitFor(pawn: Pawn) {
+        if (!this.isAppliedTo(pawn)) {
+            return
+        }
+
         val hitValue = getHitValueOf(pawn)
         val kind = PoisonKind.getByHitValue(hitValue)
 
