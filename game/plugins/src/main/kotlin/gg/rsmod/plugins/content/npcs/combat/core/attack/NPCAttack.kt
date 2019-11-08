@@ -3,7 +3,6 @@ package gg.rsmod.plugins.content.npcs.combat.core.attack
 import gg.rsmod.game.model.World
 import gg.rsmod.game.model.entity.Npc
 import gg.rsmod.game.model.entity.Pawn
-import gg.rsmod.game.model.entity.Player
 import gg.rsmod.game.model.queue.QueueTask
 import gg.rsmod.plugins.api.ext.createProjectile
 import gg.rsmod.plugins.content.combat.moveToAttackRange
@@ -49,7 +48,7 @@ class NPCAttack(
             return true
         }
 
-        if (!this.canWalkTowardsTarget()) {
+        if (!this.isWalkingRequired()) {
             return false
         }
 
@@ -59,7 +58,7 @@ class NPCAttack(
     /**
      * Checks whether this attack can walk npc towards the target
      */
-    private fun canWalkTowardsTarget(): Boolean {
+    private fun isWalkingRequired(): Boolean {
         return this.configuration.move.required
     }
 

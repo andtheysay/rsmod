@@ -118,6 +118,9 @@ fun Player.openInterface(interfaceId: Int, dest: InterfaceDestination, fullscree
     if (displayMode == DisplayMode.FULLSCREEN) {
         openOverlayInterface(displayMode)
     }
+    println("parent = ${parent}")
+    println("child = ${child}")
+    println("interfaceId = ${interfaceId}")
     openInterface(parent, child, interfaceId, if (dest.clickThrough) 1 else 0, isModal = dest == InterfaceDestination.MAIN_SCREEN)
 }
 
@@ -234,6 +237,7 @@ fun Player.openOverlayInterface(displayMode: DisplayMode) {
     }
     val component = getDisplayComponentId(displayMode)
     interfaces.setVisible(parent = getDisplayComponentId(displayMode), child = 0, visible = true)
+    println("component = ${component}")
     write(IfOpenTopMessage(component))
 }
 
