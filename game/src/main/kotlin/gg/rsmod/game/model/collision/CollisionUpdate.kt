@@ -63,8 +63,8 @@ class CollisionUpdate private constructor(val type: Type, val flags: Object2Obje
             }
 
             val x = tile.x
-            val z = tile.z
-            val height = tile.height
+            val z = tile.y
+            val height = tile.z
             var width = def.width
             var length = def.length
             val impenetrable = def.impenetrable

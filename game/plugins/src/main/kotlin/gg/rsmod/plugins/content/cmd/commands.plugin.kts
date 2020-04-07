@@ -72,10 +72,10 @@ on_command("mypos", Privilege.ADMIN_POWER) {
     val instancedMap = world.instanceAllocator.getMap(player.tile)
     val tile = player.tile
     if (instancedMap == null) {
-        player.message("Tile=[<col=801700>${tile.x}, ${tile.z}, ${tile.height}</col>], Region=${player.tile.regionId}")
+        player.message("Tile=[<col=801700>${tile.x}, ${tile.y}, ${tile.z}</col>], Region=${player.tile.regionId}")
     } else {
         val delta = tile - instancedMap.area.bottomLeft
-        player.message("Tile=[<col=801700>${tile.x}, ${tile.z}, ${tile.height}</col>], Relative=[${delta.x}, ${delta.z}]")
+        player.message("Tile=[<col=801700>${tile.x}, ${tile.y}, ${tile.z}</col>], Relative=[${delta.x}, ${delta.y}]")
     }
 }
 
@@ -316,10 +316,10 @@ on_command("interface", Privilege.ADMIN_POWER) {
 
 on_command("clip", Privilege.ADMIN_POWER) {
     val chunk = world.chunks.getOrCreate(player.tile)
-    val matrix = chunk.getMatrix(player.tile.height)
+    val matrix = chunk.getMatrix(player.tile.z)
     val lx = player.tile.x % 8
-    val lz = player.tile.z % 8
-    player.message("Tile flags: ${chunk.getMatrix(player.tile.height).get(lx, lz)}")
+    val lz = player.tile.y % 8
+    player.message("Tile flags: ${chunk.getMatrix(player.tile.z).get(lx, lz)}")
     Direction.RS_ORDER.forEach { dir ->
         val walkBlocked = matrix.isBlocked(lx, lz, dir, projectile = false)
         val projectileBlocked = matrix.isBlocked(lx, lz, dir, projectile = true)

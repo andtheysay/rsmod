@@ -14,7 +14,7 @@ class RebuildLoginEncoder : MessageEncoder<RebuildLoginMessage>() {
 
     override fun extract(message: RebuildLoginMessage, key: String): Number = when (key) {
         "x" -> message.tile.x shr 3
-        "z" -> message.tile.z shr 3
+        "z" -> message.tile.y shr 3
         else -> throw Exception("Unhandled value key.")
     }
 
@@ -39,7 +39,7 @@ class RebuildLoginEncoder : MessageEncoder<RebuildLoginMessage>() {
         /**
          * Since the xtea payload is exactly the same as the [RebuildNormalMessage], let's reuse it.
          */
-        "xteas" -> RebuildNormalEncoder().extractBytes(RebuildNormalMessage(message.tile.x shr 3, message.tile.z shr 3, message.xteaKeyService), key)
+        "xteas" -> RebuildNormalEncoder().extractBytes(RebuildNormalMessage(message.tile.x shr 3, message.tile.y shr 3, message.xteaKeyService), key)
         else -> throw Exception("Unhandled value key.")
     }
 }

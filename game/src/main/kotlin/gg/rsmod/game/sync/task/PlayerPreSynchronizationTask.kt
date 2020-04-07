@@ -22,15 +22,15 @@ object PlayerPreSynchronizationTask : SynchronizationTask<Player> {
 
         if (last == null || shouldRebuildRegion(last, current)) {
             val regionX = ((current.x shr 3) - (Chunk.MAX_VIEWPORT shr 4)) shl 3
-            val regionZ = ((current.z shr 3) - (Chunk.MAX_VIEWPORT shr 4)) shl 3
+            val regionZ = ((current.y shr 3) - (Chunk.MAX_VIEWPORT shr 4)) shl 3
 
-            pawn.lastKnownRegionBase = Coordinate(regionX, regionZ, current.height)
+            pawn.lastKnownRegionBase = Coordinate(regionX, regionZ, current.z)
 
             val xteaService = pawn.world.xteaKeyService
             val instance = pawn.world.instanceAllocator.getMap(current)
             val rebuildMessage = when {
-                instance != null -> RebuildRegionMessage(current.x shr 3, current.z shr 3, 1, instance.getCoordinates(pawn.tile), xteaService)
-                else -> RebuildNormalMessage(current.x shr 3, current.z shr 3, xteaService)
+                instance != null -> RebuildRegionMessage(current.x shr 3, current.y shr 3, 1, instance.getCoordinates(pawn.tile), xteaService)
+                else -> RebuildNormalMessage(current.x shr 3, current.y shr 3, xteaService)
             }
             pawn.write(rebuildMessage)
         }
@@ -38,7 +38,7 @@ object PlayerPreSynchronizationTask : SynchronizationTask<Player> {
 
     private fun shouldRebuildRegion(old: Coordinate, new: Tile): Boolean {
         val dx = new.x - old.x
-        val dz = new.z - old.z
+        val dz = new.y - old.z
 
         return dx <= Player.NORMAL_VIEW_DISTANCE || dx >= Chunk.MAX_VIEWPORT - Player.NORMAL_VIEW_DISTANCE - 1
                 || dz <= Player.NORMAL_VIEW_DISTANCE || dz >= Chunk.MAX_VIEWPORT - Player.NORMAL_VIEW_DISTANCE - 1

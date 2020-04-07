@@ -91,7 +91,7 @@ class MovementQueue(val pawn: Pawn) {
 
     private fun addStep(current: Tile, next: Tile, type: StepType, detectCollision: Boolean) {
         var dx = next.x - current.x
-        var dz = next.z - current.z
+        var dz = next.y - current.y
         val delta = Math.max(Math.abs(dx), Math.abs(dz))
 
         for (i in 0 until delta) {

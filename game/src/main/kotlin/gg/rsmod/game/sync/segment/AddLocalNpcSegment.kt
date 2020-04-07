@@ -14,7 +14,7 @@ class AddLocalNpcSegment(val player: Player, val npc: Npc, private val requiresB
 
     override fun encode(buf: GamePacketBuilder) {
         var dx = npc.tile.x - player.tile.x
-        var dz = npc.tile.z - player.tile.z
+        var dz = npc.tile.y - player.tile.y
         if (!largeScene) {
             if (dx < Player.NORMAL_VIEW_DISTANCE) {
                 dx += 32

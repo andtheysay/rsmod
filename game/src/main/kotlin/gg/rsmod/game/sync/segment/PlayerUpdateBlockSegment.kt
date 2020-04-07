@@ -102,9 +102,9 @@ class PlayerUpdateBlockSegment(val other: Player, private val newPlayer: Boolean
                 val structure = blocks.updateBlocks[blockType]!!.values
                 if (forceFace != null) {
                     val srcX = other.tile.x * 64
-                    val srcZ = other.tile.z * 64
+                    val srcZ = other.tile.y * 64
                     val dstX = forceFace.x * 64
-                    val dstZ = forceFace.z * 64
+                    val dstZ = forceFace.y * 64
                     val degreesX = (srcX - dstX).toDouble()
                     val degreesZ = (srcZ - dstZ).toDouble()
                     buf.put(structure[0].type, structure[0].order, structure[0].transformation, (Math.atan2(degreesX, degreesZ) * 325.949).toInt() and 0x7ff)

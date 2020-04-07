@@ -232,7 +232,7 @@ class PathRequest private constructor(val start: Tile, val sourceWidth: Int, val
          * Creates a default walk request.
          */
         fun createWalkRequest(pawn: Pawn, x: Int, z: Int, projectile: Boolean, detectCollision: Boolean): PathRequest = Builder()
-                .setPoints(start = Tile(pawn.tile), end = Tile(x, z, pawn.tile.height))
+                .setPoints(start = Tile(pawn.tile), end = Tile(x, z, pawn.tile.z))
                 .setSourceSize(width = pawn.getSize(), length = pawn.getSize())
                 .setTargetSize(width = 0, length = 0)
                 .setProjectilePath(projectile)

@@ -166,13 +166,13 @@ class InstancedMapAllocator {
                         val copyChunk = world.chunks.get(copyTile.chunkCoords, createIfNeeded = true)!!
 
                         copyChunk.getEntities<StaticObject>(EntityType.STATIC_OBJECT).forEach { obj ->
-                            if (obj.tile.height == chunkH && obj.tile.isInSameChunk(copyTile)) {
+                            if (obj.tile.z == chunkH && obj.tile.isInSameChunk(copyTile)) {
                                 val def = obj.getDef(world.definitions)
                                 val width = def.getRotatedWidth(obj)
                                 val length = def.getRotatedLength(obj)
 
                                 val localX = obj.tile.x % 8
-                                val localZ = obj.tile.z % 8
+                                val localZ = obj.tile.y % 8
 
                                 val newObj = DynamicObject(obj.id, obj.type, (obj.rot + chunk.rot) and 0x3, baseTile.transformAndRotate(localX, localZ, chunk.rot, width, length))
                                 val insideChunk = newObj.tile.isInSameChunk(baseTile)
@@ -187,11 +187,11 @@ class InstancedMapAllocator {
                         }
 
                         copyChunk.blockedTiles.forEach { tile ->
-                            if (tile.height == chunkH && tile.isInSameChunk(copyTile)) {
+                            if (tile.z == chunkH && tile.isInSameChunk(copyTile)) {
                                 val localX = tile.x % 8
-                                val localZ = tile.z % 8
+                                val localZ = tile.y % 8
                                 val local = baseTile.transformAndRotate(localX, localZ, chunk.rot)
-                                newChunk.getMatrix(chunkH).block(local.x % 8, local.z % 8, impenetrable = true)
+                                newChunk.getMatrix(chunkH).block(local.x % 8, local.y % 8, impenetrable = true)
                             }
                         }
                     } else {

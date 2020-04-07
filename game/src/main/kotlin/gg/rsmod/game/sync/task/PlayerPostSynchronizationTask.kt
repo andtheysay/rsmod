@@ -14,7 +14,7 @@ object PlayerPostSynchronizationTask : SynchronizationTask<Player> {
     override fun run(pawn: Player) {
         val oldTile = pawn.lastTile
         val moved = oldTile == null || !oldTile.sameAs(pawn.tile)
-        val changedHeight = oldTile?.height != pawn.tile.height
+        val changedHeight = oldTile?.z != pawn.tile.z
 
         if (moved) {
             pawn.lastTile = Tile(pawn.tile)
@@ -29,10 +29,8 @@ object PlayerPostSynchronizationTask : SynchronizationTask<Player> {
             if (newChunk != null && (oldChunk != newChunk || changedHeight)) {
                 pawn.world.getService(GameService::class.java)?.let { service ->
                     val newSurroundings = newChunk.coords.getSurroundingCoords()
-                    if (!changedHeight) {
-                        val oldSurroundings = oldChunk?.coords?.getSurroundingCoords() ?: ObjectOpenHashSet()
-                        newSurroundings.removeAll(oldSurroundings)
-                    }
+                    val oldSurroundings = oldChunk?.coords?.getSurroundingCoords() ?: ObjectOpenHashSet()
+                    newSurroundings.removeAll(oldSurroundings)
 
                     newSurroundings.forEach { coords ->
                         val chunk = pawn.world.chunks.get(coords, createIfNeeded = false) ?: return@forEach

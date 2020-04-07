@@ -90,7 +90,7 @@ enum class Direction(val orientationValue: Int, val playerWalkValue: Int, val np
 
         fun between(current: Tile, next: Tile): Direction {
             val deltaX = next.x - current.x
-            val deltaZ = next.z - current.z
+            val deltaZ = next.y - current.y
 
             return fromDeltas(deltaX, deltaZ)
         }

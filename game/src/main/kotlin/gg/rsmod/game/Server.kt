@@ -90,8 +90,8 @@ class Server {
          * Create a game context for our configurations and services to run.
          */
         val gameContext = GameContext(initialLaunch = initialLaunch,
-                name = gameProperties.get<String>("name")!!,
-                revision = gameProperties.get<Int>("revision")!!,
+                name  = gameProperties.get<String>("name")!!,
+                revision = 181,
                 cycleTime = gameProperties.getOrDefault("cycle-time", 600),
                 playerLimit = gameProperties.getOrDefault("max-players", 2048),
                 home = Tile(gameProperties.get<Int>("home-x")!!, gameProperties.get<Int>("home-z")!!, gameProperties.getOrDefault("home-height", 0)),

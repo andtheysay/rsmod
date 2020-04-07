@@ -46,13 +46,13 @@ class CollisionManager(val chunks: ChunkSet, val createChunksIfNeeded: Boolean =
      * metadata explicitly allows them to.
      */
     fun raycast(start: Tile, target: Tile, projectile: Boolean): Boolean {
-        check(start.height == target.height) { "Tiles must be on the same height level." }
+        check(start.z == target.z) { "Tiles must be on the same height level." }
 
         var x0 = start.x
-        var y0 = start.z
+        var y0 = start.y
         val x1 = target.x
-        val y1 = target.z
-        val height = start.height
+        val y1 = target.y
+        val height = start.z
 
         val dx = Math.abs(x1 - x0)
         val dy = Math.abs(y1 - y0)
@@ -94,12 +94,12 @@ class CollisionManager(val chunks: ChunkSet, val createChunksIfNeeded: Boolean =
      * in tiles.
      */
     fun raycastTiles(start: Tile, target: Tile): Int {
-        check(start.height == target.height) { "Tiles must be on the same height level." }
+        check(start.z == target.z) { "Tiles must be on the same height level." }
 
         var x0 = start.x
-        var y0 = start.z
+        var y0 = start.y
         val x1 = target.x
-        val y1 = target.z
+        val y1 = target.y
 
         val dx = Math.abs(x1 - x0)
         val dy = Math.abs(y1 - y0)
@@ -159,9 +159,9 @@ class CollisionManager(val chunks: ChunkSet, val createChunksIfNeeded: Boolean =
             }
 
             val localX = tile.x % Chunk.CHUNK_SIZE
-            val localZ = tile.z % Chunk.CHUNK_SIZE
+            val localZ = tile.y % Chunk.CHUNK_SIZE
 
-            val matrix = chunk.getMatrix(tile.height)
+            val matrix = chunk.getMatrix(tile.z)
             val pawns = CollisionFlag.pawnFlags()
             val projectiles = CollisionFlag.projectileFlags()
 
