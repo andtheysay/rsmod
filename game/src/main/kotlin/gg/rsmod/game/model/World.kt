@@ -414,7 +414,7 @@ class World(val gameContext: GameContext, val devContext: DevContext) {
             }
         }
 
-        //groundItems.add(item)
+        groundItems.add(item)
         chunk.addEntity(this, item, tile)
     }
 
