@@ -1,4 +1,4 @@
-package gg.rsmod.plugins.content.areas.lumbridge
+package gg.rsmod.plugins.content.areas.lumbridge.objs
 
 //Bottom Floor
 on_obj_option(Objs.STAIRCASE_16671, "climb-up") {

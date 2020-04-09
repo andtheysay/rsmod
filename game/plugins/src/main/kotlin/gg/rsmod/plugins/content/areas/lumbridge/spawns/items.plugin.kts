@@ -1,7 +1,5 @@
 package gg.rsmod.plugins.content.areas.lumbridge.spawns
 
-
-
 //Castle
 spawn_item(item = Items.KNIFE, amount = 1, x = 3205, z = 3212)
 spawn_item(item = Items.BOWL, amount = 1, x = 3208, z = 3214)
