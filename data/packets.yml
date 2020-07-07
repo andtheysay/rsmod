@@ -537,3 +537,71 @@ in-packets:
     opcode: 45
     length: -1
     ignore: true
+
+  - message: gg.rsmod.game.message.impl.OpNpc1Message
+    type: FIXED
+    opcode: 33
+    length: 3
+    structure:
+      - name: movement_type
+        type: BYTE
+        trans: SUBTRACT
+      - name: index
+        order: LITTLE
+        type: SHORT
+
+  - message: gg.rsmod.game.message.impl.OpNpc2Message
+    type: FIXED
+    opcode: 1
+    length: 10
+    structure:
+      - name: movement_type
+        type: BYTE
+        trans: NEGATE
+      - name: index
+        type: SHORT
+
+  - message: gg.rsmod.game.message.impl.OpNpc3Message
+    type: FIXED
+    opcode: 19
+    length: 3
+    structure:
+      - name: movement_type
+        type: BYTE
+        trans: SUBTRACT
+      - name: index
+        type: SHORT
+        trans: ADD
+
+  - message: gg.rsmod.game.message.impl.OpNpc4Message
+    type: FIXED
+    opcode: 97
+    length: 3
+    structure:
+      - name: index
+        type: SHORT
+        order: LITTLE
+        trans: ADD
+      - name: movement_type
+        type: BYTE
+
+  - message: gg.rsmod.game.message.impl.OpNpc5Message
+    type: FIXED
+    opcode: 37
+    length: 3
+    structure:
+      - name: index
+        type: SHORT
+        trans: ADD
+      - name: movement_type
+        type: BYTE
+
+  - message: gg.rsmod.game.message.impl.OpNpc6Message
+    type: FIXED
+    opcode: 26
+    length: 2
+    structure:
+      - name: npc_id
+        sign: UNSIGNED
+        type: SHORT
+        trans: ADD
