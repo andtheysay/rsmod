@@ -538,6 +538,116 @@ in-packets:
     length: -1
     ignore: true
 
+  - message: gg.rsmod.game.message.impl.WindowStatusMessage
+    opcode: 46
+    length: 5
+    type: FIXED
+    structure:
+      - name: mode
+        type: BYTE
+      - name: width
+        type: SHORT
+      - name: height
+        type: SHORT
+
+  - message: gg.rsmod.game.message.impl.IgnoreMessage # Heartbeat packet
+    opcode: 44
+    length: 0
+    type: FIXED
+    ignore: TRUE
+
+  - message: gg.rsmod.game.message.impl.MapBuildCompleteMessage
+    opcode: 85
+    length: 0
+    type: FIXED
+
+  - message: gg.rsmod.game.message.impl.IgnoreMessage # Unknown message
+    type: VARIABLE_BYTE
+    opcode: 69
+    ignore: true
+
+  - message: gg.rsmod.game.message.impl.MessagePublicMessage
+    type: VARIABLE_BYTE
+    opcode: 12
+    structure:
+      - name: type
+        type: BYTE
+      - name: color
+        type: BYTE
+      - name: effect
+        type: BYTE
+
+  - message: gg.rsmod.game.message.impl.UpdateAppearanceMessage
+    type: FIXED
+    opcode: 25
+    length: 13
+    structure:
+      - name: gender
+        sign: UNSIGNED
+        type: BYTE
+      - name: appearance0
+        sign: UNSIGNED
+        type: BYTE
+      - name: appearance1
+        sign: UNSIGNED
+        type: BYTE
+      - name: appearance2
+        sign: UNSIGNED
+        type: BYTE
+      - name: appearance3
+        sign: UNSIGNED
+        type: BYTE
+      - name: appearance4
+        sign: UNSIGNED
+        type: BYTE
+      - name: appearance5
+        sign: UNSIGNED
+        type: BYTE
+      - name: appearance6
+        sign: UNSIGNED
+        type: BYTE
+      - name: color0
+        sign: UNSIGNED
+        type: BYTE
+      - name: color1
+        sign: UNSIGNED
+        type: BYTE
+      - name: color2
+        sign: UNSIGNED
+        type: BYTE
+      - name: color3
+        sign: UNSIGNED
+        type: BYTE
+      - name: color4
+        sign: UNSIGNED
+        type: BYTE
+
+  - message: gg.rsmod.game.message.impl.ClientCheatMessage
+    type: VARIABLE_BYTE
+    opcode: 27
+    structure:
+      - name: command
+        type: STRING
+
+  - message: gg.rsmod.game.message.impl.CloseModalMessage
+    type: FIXED
+    opcode: 24
+    length: 0
+
+  - message: gg.rsmod.game.message.impl.IfButtonMessage
+    type: FIXED
+    opcodes: 13,77,34,91,20,79,62,23,68,76
+    length: 8
+    structure:
+      - name: hash
+        type: INT
+      - name: slot
+        sign: UNSIGNED
+        type: SHORT
+      - name: item
+        sign: UNSIGNED
+        type: SHORT
+
   - message: gg.rsmod.game.message.impl.MoveGameClickMessage
     type: VARIABLE_BYTE
     opcode: 66

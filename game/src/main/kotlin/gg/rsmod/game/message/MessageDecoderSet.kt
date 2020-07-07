@@ -32,12 +32,12 @@ class MessageDecoderSet {
         put(EventKeyboardMessage::class.java, EventKeyboardDecoder(), EventKeyboardHandler(), structures)
 
 //        put(DetectModifiedClientMessage::class.java, DetectModifiedClientDecoder(), DetectModifiedClientHandler(), structures)
-//        put(WindowStatusMessage::class.java, WindowStatusDecoder(), WindowStatusHandler(), structures)
+        put(WindowStatusMessage::class.java, WindowStatusDecoder(), WindowStatusHandler(), structures)
 
-//        put(MapBuildCompleteMessage::class.java, MapBuildCompleteDecoder(), MapBuildCompleteHandler(), structures)
-//        put(MessagePublicMessage::class.java, MessagePublicDecoder(), MessagePublicHandler(), structures)
-//        put(UpdateAppearanceMessage::class.java, UpdateAppearanceDecoder(), UpdateAppearanceHandler(), structures)
-//        put(ClientCheatMessage::class.java, ClientCheatDecoder(), ClientCheatHandler(), structures)
+        put(MapBuildCompleteMessage::class.java, MapBuildCompleteDecoder(), MapBuildCompleteHandler(), structures)
+        put(MessagePublicMessage::class.java, MessagePublicDecoder(), MessagePublicHandler(), structures)
+        put(UpdateAppearanceMessage::class.java, UpdateAppearanceDecoder(), UpdateAppearanceHandler(), structures)
+        put(ClientCheatMessage::class.java, ClientCheatDecoder(), ClientCheatHandler(), structures)
 //        put(ClanJoinChatLeaveChatMessage::class.java, ClanJoinChatLeaveChatDecoder(), ClanJoinChatLeaveHandler(), structures)
 
         put(MoveGameClickMessage::class.java, MoveGameClickDecoder(), ClickMapHandler(), structures)
@@ -45,8 +45,8 @@ class MessageDecoderSet {
 //        put(TeleportMessage::class.java, TeleportDecoder(), TeleportHandler(), structures)
 //        put(ClickWorldMapMessage::class.java, ClickWorldMapDecoder(), ClickWorldMapHandler(), structures)
 
-//        put(CloseModalMessage::class.java, CloseModalDecoder(), CloseMainComponentHandler(), structures)
-//        put(IfButtonMessage::class.java, IfButton1Decoder(), IfButton1Handler(), structures)
+        put(CloseModalMessage::class.java, CloseModalDecoder(), CloseMainComponentHandler(), structures)
+        put(IfButtonMessage::class.java, IfButton1Decoder(), IfButton1Handler(), structures)
 //        put(IfButtonDMessage::class.java, IfButtonDDecoder(), IfButtonDHandler(), structures)
 
 //        put(ResumePauseButtonMessage::class.java, ResumePauseButtonDecoder(), ResumePauseButtonHandler(), structures)
