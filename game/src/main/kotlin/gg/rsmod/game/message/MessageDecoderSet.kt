@@ -40,8 +40,8 @@ class MessageDecoderSet {
 //        put(ClientCheatMessage::class.java, ClientCheatDecoder(), ClientCheatHandler(), structures)
 //        put(ClanJoinChatLeaveChatMessage::class.java, ClanJoinChatLeaveChatDecoder(), ClanJoinChatLeaveHandler(), structures)
 
-//        put(MoveGameClickMessage::class.java, MoveGameClickDecoder(), ClickMapHandler(), structures)
-//        put(MoveMinimapClickMessage::class.java, MoveMinimapClickDecoder(), ClickMinimapHandler(), structures)
+        put(MoveGameClickMessage::class.java, MoveGameClickDecoder(), ClickMapHandler(), structures)
+        put(MoveMinimapClickMessage::class.java, MoveMinimapClickDecoder(), ClickMinimapHandler(), structures)
 //        put(TeleportMessage::class.java, TeleportDecoder(), TeleportHandler(), structures)
 //        put(ClickWorldMapMessage::class.java, ClickWorldMapDecoder(), ClickWorldMapHandler(), structures)
 

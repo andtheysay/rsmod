@@ -538,6 +538,34 @@ in-packets:
     length: -1
     ignore: true
 
+  - message: gg.rsmod.game.message.impl.MoveGameClickMessage
+    type: VARIABLE_BYTE
+    opcode: 66
+    structure:
+      - name: z
+        sign: UNSIGNED
+        type: SHORT
+      - name: x
+        sign: UNSIGNED
+        type: SHORT
+      - name: movement_type
+        type: BYTE
+        trans: NEGATE
+
+  - message: gg.rsmod.game.message.impl.MoveMinimapClickMessage
+    type: VARIABLE_BYTE
+    opcode: 48
+    structure:
+      - name: z
+        sign: UNSIGNED
+        type: SHORT
+      - name: x
+        sign: UNSIGNED
+        type: SHORT
+      - name: movement_type
+        type: BYTE
+        trans: NEGATE
+
   - message: gg.rsmod.game.message.impl.OpNpc1Message
     type: FIXED
     opcode: 33
