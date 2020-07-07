@@ -60,6 +60,7 @@ class MessageEncoderSet {
         put(OnDialogAbortEncoder(), TriggerOnDialogAbortMessage::class.java)
         put(UpdateRebootTimerEncoder(), UpdateRebootTimerMessage::class.java)
         put(MapAnimEncoder(), MapAnimMessage::class.java)
+        put(HintArrowEncoder(), SetHintArrowMessage::class.java)
     }
 
     private fun <T : Message> put(encoder: MessageEncoder<T>, message: Class<out T>) {
