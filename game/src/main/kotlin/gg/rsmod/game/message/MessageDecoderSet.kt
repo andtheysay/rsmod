@@ -55,12 +55,12 @@ class MessageDecoderSet {
 //        put(ResumePStringDialogMessage::class.java, ResumePStringDialogDecoder(), ResumePStringDialogHandler(), structures)
 //        put(ResumePNameDialogMessage::class.java, ResumePNameDialogDecoder(), ResumePNameDialogHandler(), structures)
 
-//        put(OpLoc1Message::class.java, OpLoc1Decoder(), OpLoc1Handler(), structures)
-//        put(OpLoc2Message::class.java, OpLoc2Decoder(), OpLoc2Handler(), structures)
-//        put(OpLoc3Message::class.java, OpLoc3Decoder(), OpLoc3Handler(), structures)
-//        put(OpLoc4Message::class.java, OpLoc4Decoder(), OpLoc4Handler(), structures)
-//        put(OpLoc5Message::class.java, OpLoc5Decoder(), OpLoc5Handler(), structures)
-//        put(OpLoc6Message::class.java, OpLoc6Decoder(), OpLoc6Handler(), structures)
+        put(OpLoc1Message::class.java, OpLoc1Decoder(), OpLoc1Handler(), structures)
+        put(OpLoc2Message::class.java, OpLoc2Decoder(), OpLoc2Handler(), structures)
+        put(OpLoc3Message::class.java, OpLoc3Decoder(), OpLoc3Handler(), structures)
+        put(OpLoc4Message::class.java, OpLoc4Decoder(), OpLoc4Handler(), structures)
+        put(OpLoc5Message::class.java, OpLoc5Decoder(), OpLoc5Handler(), structures)
+        put(OpLoc6Message::class.java, OpLoc6Decoder(), OpLoc6Handler(), structures)
 
 //        put(OpHeld1Message::class.java, OpHeld1Decoder(), OpHeld1Handler(), structures)
 //        put(OpHeld2Message::class.java, OpHeld2Decoder(), OpHeld2Handler(), structures)

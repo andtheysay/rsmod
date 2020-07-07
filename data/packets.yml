@@ -605,3 +605,118 @@ in-packets:
         sign: UNSIGNED
         type: SHORT
         trans: ADD
+
+  - message: gg.rsmod.game.message.impl.OpLoc1Message
+    type: FIXED
+    opcode: 88
+    length: 7
+    structure:
+      - name: z
+        type: SHORT
+        sign: UNSIGNED
+        trans: ADD
+      - name: movement_type
+        type: BYTE
+        trans: ADD
+      - name: x
+        sign: UNSIGNED
+        type: SHORT
+      - name: id
+        sign: UNSIGNED
+        type: SHORT
+        order: LITTLE
+        trans: ADD
+
+  - message: gg.rsmod.game.message.impl.OpLoc2Message
+    type: FIXED
+    opcode: 41
+    length: 7
+    structure:
+      - name: movement_type
+        type: BYTE
+        trans: SUBTRACT
+      - name: z
+        sign: UNSIGNED
+        type: SHORT
+        order: LITTLE
+        trans: ADD
+      - name: id
+        sign: UNSIGNED
+        type: SHORT
+      - name: x
+        sign: UNSIGNED
+        type: SHORT
+        order: LITTLE
+        trans: ADD
+
+  - message: gg.rsmod.game.message.impl.OpLoc3Message
+    type: FIXED
+    opcode: 72
+    length: 7
+    structure:
+      - name: x
+        sign: UNSIGNED
+        order: LITTLE
+        type: SHORT
+      - name: z
+        sign: UNSIGNED
+        order: LITTLE
+        type: SHORT
+      - name: id
+        sign: UNSIGNED
+        type: SHORT
+      - name: movement_type
+        type: BYTE
+        trans: ADD
+
+  - message: gg.rsmod.game.message.impl.OpLoc4Message
+    type: FIXED
+    opcode: 29
+    length: 7
+    structure:
+      - name: x
+        sign: UNSIGNED
+        type: SHORT
+        trans: ADD
+      - name: movement_type
+        type: BYTE
+        trans: SUBTRACT
+      - name: id
+        sign: UNSIGNED
+        order: LITTLE
+        type: SHORT
+        trans: ADD
+      - name: z
+        sign: UNSIGNED
+        type: SHORT
+        order: LITTLE
+
+  - message: gg.rsmod.game.message.impl.OpLoc5Message
+    type: FIXED
+    opcode: 30
+    length: 7
+    structure:
+      - name: id
+        sign: UNSIGNED
+        type: SHORT
+        order: LITTLE
+      - name: z
+        sign: UNSIGNED
+        type: SHORT
+        trans: ADD
+      - name: x
+        sign: UNSIGNED
+        type: SHORT
+      - name: movement_type
+        type: BYTE
+        trans: ADD
+
+  - message: gg.rsmod.game.message.impl.OpLoc6Message
+    type: FIXED
+    opcode: 96
+    length: 2
+    structure:
+      - name: id
+        sign: UNSIGNED
+        type: SHORT
+        trans: ADD
