@@ -14,7 +14,7 @@ enum class PickaxeType(val item: Int, val level: Int, val animation: Int) {
     ADAMANT(item = Items.ADAMANT_PICKAXE, level = 31, animation = 628),
     RUNE(item = Items.RUNE_PICKAXE, level = 41, animation = 624),
     // NEED TO ADD GILDED PICKAXES
-    DRAGON(item = Items.DRAGON_PICKAXE, level = 61, animation = 625), // Need to update anim
+    DRAGON(item = Items.DRAGON_PICKAXE, level = 61, animation = 7139),
     THIRD_AGE(item = Items._3RD_AGE_PICKAXE, level = 61, animation = 7284),
     INFERNAL(item = Items.INFERNAL_PICKAXE, level = 61, animation = 4483);
 

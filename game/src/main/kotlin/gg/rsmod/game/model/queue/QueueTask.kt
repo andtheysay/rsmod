@@ -66,8 +66,13 @@ data class QueueTask(override val ctx: Any, override val priority: TaskPriority)
         nextStep = SuspendableStepImpl(PredicateCondition { predicate() }, it)
     }
 
-    suspend fun waitTile(tile: Tile, pawn: Pawn = ctx as Pawn): Unit = suspendCoroutine {
-        nextStep = SuspendableStepImpl(TileCondition(pawn, tile), it)
+    /**
+     * Wait for our [ctx] to reach [tile]. Note that [ctx] MUST be an instance
+     * of [Pawn] and that the height of the [tile] and [Pawn.tile] must be equal,
+     * as well as the x and z coordinates.
+     */
+    suspend fun waitTile(tile: Tile): Unit = suspendCoroutine {
+        nextStep = SuspendableStep(TileCondition(ctx as Pawn, tile), it)
     }
 
     suspend fun waitInterfaceClose(interfaceId: Int): Unit = suspendCoroutine {

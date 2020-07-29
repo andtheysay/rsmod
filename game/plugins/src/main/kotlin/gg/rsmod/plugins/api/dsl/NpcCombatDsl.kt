@@ -14,7 +14,6 @@ import gg.rsmod.plugins.api.ext.enumSetOf
 fun KotlinPlugin.set_combat_def(npc: Int, init: NpcCombatDsl.Builder.() -> Unit) {
     val builder = NpcCombatDsl.Builder()
     init(builder)
-
     set_combat_def(npc, builder.build())
 }
 

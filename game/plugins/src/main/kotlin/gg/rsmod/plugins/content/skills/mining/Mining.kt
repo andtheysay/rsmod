@@ -30,7 +30,6 @@ object Mining {
     suspend fun mineOre(it: QueueTask, obj: GameObject, ore: OreType, emptyOreId: Int) {
         val p = it.player
         var loops: Int = 0
-        val maxLoops: Int = 0 // will be used
 
         if(!canMine(p, obj, ore)) {
             return
@@ -55,12 +54,23 @@ object Mining {
             it.wait(2)
             p.animate(pickaxe.animation)
 
+            when (ore) {
+                OreType.RUNE_ESSENCE -> {
+                    val essenceType = evalEssenceType(p.getSkills().getCurrentLevel(Skills.MINING))
+                    oreName = p.world.definitions.get(ItemDef::class.java, essenceType.ore).name
+                    p.filterableMessage("You manage to mine some $oreName.")
+                    p.playSound(3600) // may need to update this
+                    p.inventory.add(essenceType.ore)
+                    p.addXp(Skills.MINING, essenceType.xp)
+                }
+            }
+
             if(!canMine(p, obj, ore)) {
                 p.animate(-1)
                 break
             }
 
-            it.wait(1)
+            it.wait(3)
 
             val level = p.getSkills().getCurrentLevel(Skills.MINING)
             // TODO: Implement pickaxe type interpolation
@@ -94,6 +104,14 @@ object Mining {
                         p.inventory.add(graniteWeight.ore)
                         p.addXp(Skills.MINING, graniteWeight.xp)
                     }
+                    OreType.GEMSTONE1 -> {
+                        val gemstoneWeight = evalGemWeight()
+                        oreName = p.world.definitions.get(ItemDef::class.java, gemstoneWeight.ore).name
+                        p.filterableMessage("You manage to mine some $oreName.")
+                        p.playSound(3600) // may need to update this
+                        p.inventory.add(gemstoneWeight.ore)
+                        p.addXp(Skills.MINING, gemstoneWeight.xp)
+                    }
                     else -> {
                         p.filterableMessage("You manage to mine some $oreName.")
                         p.playSound(3600) // may need to update this
@@ -114,9 +132,10 @@ object Mining {
                         world.remove(emptyOreVein)
                         world.spawn(DynamicObject(obj))
                     }
+                    p.animate(-1) // reset animation
+                    randomGemEvent(p)
+                    break
                 }
-                randomGemEvent(p)
-                break
             }
         }
     }
@@ -184,6 +203,11 @@ object Mining {
 
     private fun evalGraniteWeight(): OreType {
         val listOfOres = arrayOf(OreType.GRANITE1, OreType.GRANITE2, OreType.GRANITE3)
+        return listOfOres.random()
+    }
+
+    private fun evalGemWeight(): OreType {
+        val listOfOres = arrayOf(OreType.GEMSTONE1, OreType.GEMSTONE2, OreType.GEMSTONE3, OreType.GEMSTONE4, OreType.GEMSTONE5, OreType.GEMSTONE6, OreType.GEMSTONE7)
         return listOfOres.random()
     }
 

@@ -8,6 +8,7 @@ import gg.rsmod.plugins.content.skills.mining.Mining.Ore
  * @author Anthony Loukinas <anthony.loukinas@gmail.com>
  */
 private val ORES = setOf(
+        // TODO: Need to find the alternate emptyOreId rock
         Ore(OreType.RUNE_ESSENCE, obj = 34773, emptyOreId = 0), // X = 2911 Y = 4832 - Essence Mine
 
         Ore(OreType.CLAY, obj = 11362, emptyOreId = 2704),
