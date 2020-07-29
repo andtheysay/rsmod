@@ -4,6 +4,7 @@ import com.google.common.primitives.Ints
 import gg.rsmod.game.fs.def.ItemDef
 import gg.rsmod.game.fs.def.VarbitDef
 import gg.rsmod.game.message.impl.*
+import gg.rsmod.game.model.Tile
 import gg.rsmod.game.model.World
 import gg.rsmod.game.model.attr.CURRENT_SHOP_ATTR
 import gg.rsmod.game.model.attr.PROTECT_ITEM_ATTR
@@ -11,6 +12,7 @@ import gg.rsmod.game.model.bits.BitStorage
 import gg.rsmod.game.model.bits.StorageBits
 import gg.rsmod.game.model.container.ContainerStackType
 import gg.rsmod.game.model.container.ItemContainer
+import gg.rsmod.game.model.entity.Pawn
 import gg.rsmod.game.model.entity.Player
 import gg.rsmod.game.model.interf.DisplayMode
 import gg.rsmod.game.model.item.Item
@@ -526,3 +528,19 @@ fun Player.getRangedStrengthBonus(): Int = equipmentBonuses[11]
 fun Player.getMagicDamageBonus(): Int = equipmentBonuses[12]
 
 fun Player.getPrayerBonus(): Int = equipmentBonuses[13]
+
+fun Player.setHintArrow(pawn: Pawn) {
+    val type = if(pawn is Player) 1 else 10
+    write(SetHintArrowMessage(type, pawn, null))
+}
+
+fun Player.setHintArrow(tile: Tile, offset: ArrowOffsetType = ArrowOffsetType.CENTER) {
+    val type = when(offset) {
+        ArrowOffsetType.CENTER -> 2
+        ArrowOffsetType.NORTHWEST -> 3
+        ArrowOffsetType.SOUTHWEST -> 4
+        ArrowOffsetType.NORTHEAST -> 5
+        ArrowOffsetType.SOUTHEAST -> 6
+    }
+    write(SetHintArrowMessage(type, null, tile))
+}

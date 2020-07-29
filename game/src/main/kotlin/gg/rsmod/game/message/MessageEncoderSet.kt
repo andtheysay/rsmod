@@ -65,6 +65,7 @@ class MessageEncoderSet {
         put(CameraResetEncoder(), CameraResetMessage::class.java)
         put(CameraShakeEncoder(), CameraShakeMessage::class.java)
         put(MapAnimEncoder(), MapAnimMessage::class.java)
+        put(HintArrowEncoder(), SetHintArrowMessage::class.java)
     }
 
     private fun <T : Message> put(encoder: MessageEncoder<T>, message: Class<out T>) {
