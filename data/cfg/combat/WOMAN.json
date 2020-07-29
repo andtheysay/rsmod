@@ -1,0 +1,95 @@
+{
+  "name": "Woman",
+  "species": [],
+  "ids": [
+    1119
+  ],
+  "slayerXP": 258,
+  "respawn": {
+    "delay": 1
+  },
+  "aggression": {
+    "radius": 3,
+    "searchDelay": 1,
+    "timer": 10000
+  },
+  "stats": {
+    "combat": 44,
+    "hitpoints": 240,
+    "attack": 240,
+    "strength": 240,
+    "defence": 240,
+    "magic": 240,
+    "ranged": 55
+  },
+  "defenceBonuses": {
+    "stab": 70,
+    "slash": 90,
+    "crush": 90,
+    "magic": 80,
+    "ranged": 70
+  },
+  "death": {
+    "animation": 92
+  },
+  "block": {
+    "animation": 89
+  },
+  "attackSpeed": 0,
+  "attacks": [
+    {
+      "name": "Venom attack",
+      "animation": 819,
+      "nextAttackDelay": 3,
+      "hit": {
+        "min": 1,
+        "max": 2,
+        "style": {
+          "start": "MELEE",
+          "end": "MELEE"
+        },
+        "effects": [
+          {
+            "predicate": "Either",
+            "kind": "Venom",
+            "cfg": {
+              "chance": 100.0,
+              "damage": 6
+            }
+          }
+        ]
+      },
+      "move": {
+        "distance": 1,
+        "required": true
+      }
+    },
+    {
+      "name": "Poison attack",
+      "animation": 819,
+      "nextAttackDelay": 3,
+      "hit": {
+        "min": 1,
+        "max": 2,
+        "style": {
+          "start": "MELEE",
+          "end": "MELEE"
+        },
+        "effects": [
+          {
+            "predicate": "Either",
+            "kind": "Poison",
+            "cfg": {
+              "chance": 100.0,
+              "damage": 6
+            }
+          }
+        ]
+      },
+      "move": {
+        "distance": 1,
+        "required": true
+      }
+    }
+  ]
+}

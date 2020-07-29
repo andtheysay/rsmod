@@ -1,0 +1,197 @@
+{
+  "name": "King Black Dragon",
+  "species": [
+    "DRAGON",
+    "BASIC_DRAGON"
+  ],
+  "ids": [
+    239
+  ],
+  "slayerXP": 258,
+  "respawn": {
+    "delay": 1
+  },
+  "aggression": {
+    "radius": 3,
+    "searchDelay": 1,
+    "timer": 10000
+  },
+  "stats": {
+    "combat": 44,
+    "hitpoints": 240,
+    "attack": 240,
+    "strength": 240,
+    "defence": 240,
+    "magic": 240,
+    "ranged": 55
+  },
+  "defenceBonuses": {
+    "stab": 70,
+    "slash": 90,
+    "crush": 90,
+    "magic": 80,
+    "ranged": 70
+  },
+  "death": {
+    "animation": 92
+  },
+  "block": {
+    "animation": 89
+  },
+  "attackSpeed": 0,
+  "attacks": [
+    {
+      "name": "Melee attack",
+      "animation": 91,
+      "nextAttackDelay": 3,
+      "hit": {
+        "min": 1,
+        "max": 2,
+        "style": {
+          "start": "MELEE",
+          "end": "MELEE"
+        }
+      },
+      "move": {
+        "distance": 1,
+        "required": false
+      }
+    },
+    {
+      "name": "Fire attack",
+      "animation": 81,
+      "nextAttackDelay": 3,
+      "hit": {
+        "min": 0,
+        "max": 1,
+        "style": {
+          "start": "MAGIC",
+          "end": "MAGIC"
+        },
+        "effects": [
+          {
+            "predicate": "Blocked",
+            "kind": "Graphic",
+            "cfg": {
+              "graphic": 85
+            }
+          }
+        ]
+      },
+      "move": {
+        "distance": 6,
+        "required": false
+      },
+      "projectile": {
+        "id": 393,
+        "delay": 51,
+        "startHeight": 43,
+        "endHeight": 43
+      }
+    },
+    {
+      "name": "Shock attack",
+      "animation": 84,
+      "nextAttackDelay": 3,
+      "move": {
+        "distance": 6,
+        "required": false
+      },
+      "hit": {
+        "min": 0,
+        "max": 1,
+        "style": {
+          "start": "MAGIC",
+          "end": "MAGIC"
+        },
+        "effects": [
+          {
+            "predicate": "Blocked",
+            "kind": "Graphic",
+            "cfg": {
+              "graphic": 85
+            }
+          }
+        ]
+      },
+      "projectile": {
+        "id": 396,
+        "delay": 51,
+        "startHeight": 43,
+        "endHeight": 31
+      }
+    },
+    {
+      "name": "Freeze attack",
+      "nextAttackDelay": 3,
+      "animation": 83,
+      "move": {
+        "distance": 6,
+        "required": false
+      },
+      "hit": {
+        "min": 0,
+        "max": 1,
+        "style": {
+          "start": "MAGIC",
+          "end": "MAGIC"
+        },
+        "effects": [
+          {
+            "predicate": "Blocked",
+            "kind": "Graphic",
+            "cfg": {
+              "graphic": 85
+            }
+          }
+        ]
+      },
+      "projectile": {
+        "id": 395,
+        "delay": 51,
+        "startHeight": 43,
+        "endHeight": 31
+      }
+    },
+    {
+      "name": "Poison attack",
+      "animation": 82,
+      "nextAttackDelay": 3,
+      "move": {
+        "distance": 6,
+        "required": false
+      },
+      "hit": {
+        "min": 0,
+        "max": 1,
+        "style": {
+          "start": "MAGIC",
+          "end": "MAGIC"
+        },
+        "effects": [
+          {
+            "predicate": "Blocked",
+            "kind": "Graphic",
+            "cfg": {
+              "graphic": 85
+            }
+          },
+          {
+            "predicate": "Landed",
+            "kind": "Poison",
+            "cfg": {
+              "chance": 99.99,
+              "damage": 8
+            }
+          }
+        ]
+      },
+      "projectile": {
+        "id": 394,
+        "delay": 51,
+        "startHeight": 43,
+        "endHeight": 31
+      }
+    }
+  ]
+}

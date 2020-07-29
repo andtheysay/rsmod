@@ -45,7 +45,6 @@ class FilestoreSystem(channel: Channel, private val filestore: Store) : ServerSy
         if (req.archive == 255) {
             if (cachedIndexData == null) {
                 val buf = ctx.alloc().heapBuffer(filestore.indexes.size * 8)
-
                 filestore.indexes.forEach { index ->
                     buf.writeInt(index.crc)
                     buf.writeInt(index.revision)

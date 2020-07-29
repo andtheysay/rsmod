@@ -133,7 +133,7 @@ class LoginDecoder(private val serverRevision: Int, private val cacheCrcs: IntAr
             xteaBuf.readString()
             xteaBuf.skipBytes(Int.SIZE_BYTES)
 
-            xteaBuf.skipBytes(Byte.SIZE_BYTES * 10)
+            xteaBuf.skipBytes(Byte.SIZE_BYTES * 9)
             xteaBuf.skipBytes(Short.SIZE_BYTES)
             xteaBuf.skipBytes(Byte.SIZE_BYTES)
             xteaBuf.skipBytes(Byte.SIZE_BYTES * 3)
