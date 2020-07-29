@@ -1,61 +1,58 @@
 package gg.rsmod.plugins.content.areas.varrock.chat
 
-import gg.rsmod.plugins.content.magic.TeleportType
-import gg.rsmod.plugins.content.magic.teleport
+spawn_npc(Npcs.AUBURY, 3253, 3402, 0, 2)
 
-on_npc_option(npc = Npcs.AUBURY, option = "talk-to") {
-    player.queue { dialog(this) }
-}
-
-on_npc_option(npc = Npcs.AUBURY, option = "teleport") {
-    // TODO: QuestReq=> Need to have completed Rune Mysteries
-    player.queue { teleport(this) }
-}
-
-on_npc_option(npc = Npcs.AUBURY, option = "trade") {
-    open_shop(player)
-}
-
-suspend fun dialog(it: QueueTask) {
-    it.chatNpc("Do you want to buy some runes?")
-    when(it.options(
-            "Can you tell me about your cape?",
-            "Yes please!",
-            "Oh, it's a rune shop. No thank you, then.",
-            "Can you teleport me to the Rune Essence?")) {
-        1 -> {
-            it.chatNpc("Certainly! Skillcapes are a symbol of achievement. Only people who have mastered a skill and reached level 99 can get their hands on them and gain the benefits they carry.")
-            it.chatNpc("The Cape of Runecrafting has been upgraded with each talisman, allowing you to access all Runecrafting altars. Is there anything else I can help you with?")
-            when(it.options("I'd like to view your store please.", "No thank you.")) {
-                1 -> {
-                    open_shop(it.player)
-                }
-                2 -> {
-                    it.chatPlayer("No thank you.")
-                    it.chatNpc("Well, if you find someone who does want runes, please send them my way.")
-                }
-            }
+arrayOf(Npcs.AUBURY).forEach { aubury ->
+    on_npc_option(npc = aubury, option = "trade", lineOfSightDistance = 1) {
+        open_shop(player)
+    }
+    on_npc_option(npc = aubury, option = "talk-to", lineOfSightDistance = 1) {
+        player.queue {
+            dialog(this)
         }
-        2 -> {
-            open_shop(it.player)
-        }
-        3 -> {
-            it.chatPlayer("Oh, it's a rune shop. No thank you, then.")
-            it.chatNpc("Well, if you find someone who does want runes, please send them my way.")
-        }
-        4 -> {
-            it.chatPlayer("Can you teleport me to the Rune Essence?")
-            teleport(it)
+    }
+    on_npc_option(npc = aubury, option = "teleport", lineOfSightDistance = 1) {
+
+        player.queue {
+            val npc = player.getInteractingNpc()
+            player.lock = LockState.FULL
+            npc.forceChat("Senventior Disthine Molenko")
+            npc.graphic(108, 10)
+            wait(3)
+            player.graphic(110, 125)
+            wait(2)
+            player.moveTo(2912, 4833, 0)
+            player.lock = LockState.NONE
         }
     }
 }
 
-suspend fun teleport(it: QueueTask) {
-    // TODO: Add NPC Teleport Animation
-    it.player.getInteractingNpc().forceChat("<i>Senventior Disthine Molenko!</i>")
-    it.player.teleport(Tile(2911,4832), TeleportType.LUNAR)
+suspend fun dialog(it: QueueTask) {
+    it.chatNpc("Do you want to buy some runes?")
+    when (options(it)) {
+        1 -> about_your_cape(it)
+        2 -> open_shop(it.player)
+        3 -> no_thank_you(it)
+        4 -> teleport_me(it)
+    }
+}
+
+suspend fun options(it: QueueTask): Int = it.options("Can you tell me about your cape?", "Yes please!", "Oh, it's a rune shop. No thank you then.", "Can you teleport me to the Rune Essence?")
+
+suspend fun about_your_cape(it: QueueTask) {
+    it.chatNpc("Certainly! Skillcapes are a symbol of achievement. Only people who have mastered a skill and reached level 99 can get their hands on them and gain the benefits they carry.", animation = 568)
+    it.chatNpc("The Cape of Runescape has been upgraded with each talisman, allowing you to access all Runecrafting altars. Is there anything else I can help you with?", animation = 554)
 }
 
 fun open_shop(p: Player) {
     p.openShop("Aubury's Rune Shop.")
+}
+
+suspend fun no_thank_you(it: QueueTask) {
+    it.chatPlayer("Oh, it's a rune shop. No thank you, then.", animation = 568)
+    it.chatNpc("Well, if you find someone who does want runes, please send them my way.", animation = 554)
+}
+
+suspend fun teleport_me(it: QueueTask) {
+    it.chatPlayer("Can you teleport me to the Rune Essence?", animation = 568)
 }

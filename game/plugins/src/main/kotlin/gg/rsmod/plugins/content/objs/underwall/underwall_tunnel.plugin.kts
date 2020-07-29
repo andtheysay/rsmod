@@ -13,7 +13,6 @@ fun Player.climbIntoUnderwallwest() {
         lock()
         animate(2589)
         forceMove(this, ForcedMovement.of(player.tile, Tile(x = 3138, z = 3516, height = 0), clientDuration1 = 33, clientDuration2 = 60, directionAngle = Direction.EAST.angle))
-
         wait(1)
         animate(2590)
         forceMove(this, ForcedMovement.of(player.tile, Tile(x = 3139, z = 3515, height = 0), clientDuration1 = 33, clientDuration2 = 60, directionAngle = Direction.EAST.angle))

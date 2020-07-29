@@ -29,8 +29,16 @@ private val TREES = ImmutableSet.of(
         Tree(TreeType.YEW, obj = 1754, trunk = 9714), //Yew
         Tree(TreeType.MAGIC, obj = 1761, trunk = 9713), //Magic
 
+        Tree(TreeType.OAK, obj = 10820, trunk = 1356),
+
+        Tree(TreeType.WILLOW, obj = 10833, trunk = 9471),
+        Tree(TreeType.WILLOW, obj = 10831, trunk = 9471),
+        Tree(TreeType.WILLOW, obj = 10829, trunk = 9471),
+        Tree(TreeType.WILLOW, obj = 10819, trunk = 9711),
+
         Tree(TreeType.YEW, obj = 1753, trunk = 9714),
         Tree(TreeType.YEW, obj = 1754, trunk = 9714),
+        Tree(TreeType.YEW, obj = 10822, trunk = 9714),
 
         Tree(TreeType.REDWOOD, obj = 29668, trunk = 29669),
         Tree(TreeType.REDWOOD, obj = 29670, trunk = 29671)
