@@ -18,6 +18,33 @@ MEN.forEach { man ->
         }
         map
     }
+    set_combat_def(npc = man) {
+        configs {
+            attackSpeed = 4
+            respawnDelay = 25
+        }
+
+        stats {
+            hitpoints = 7
+            attack = 1
+            strength = 1
+            defence = 1
+            magic = 1
+            ranged = 1
+        }
+
+        bonuses {
+            defenceStab = -21
+            defenceSlash = -21
+            defenceCrush = -21
+            defenceMagic = -21
+            defenceRanged = -21
+        }
+
+        anims {
+            death = 836
+        }
+    }
 }
 
 suspend fun chat(it: QueueTask) {
