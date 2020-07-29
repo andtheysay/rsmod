@@ -22,6 +22,7 @@ import gg.rsmod.game.model.interf.InterfaceSet
 import gg.rsmod.game.model.interf.listener.PlayerInterfaceListener
 import gg.rsmod.game.model.item.Item
 import gg.rsmod.game.model.priv.Privilege
+import gg.rsmod.game.model.queue.QueueTask
 import gg.rsmod.game.model.skill.SkillSet
 import gg.rsmod.game.model.timer.ACTIVE_COMBAT_TIMER
 import gg.rsmod.game.model.timer.FORCE_DISCONNECTION_TIMER
@@ -62,6 +63,12 @@ open class Player(world: World) : Pawn(world) {
     var lastKnownRegionBase: Coordinate? = null
 
     /**
+     * The tile region [regionId] is region id
+     * the last known region Id for this player begins.
+     */
+    var lastRegionId: Int = lastTile?.regionId ?: -1
+
+    /**
      * A flag that indicates whether or not the [login] method has been executed.
      * This is currently used so that we don't send player updates when the player
      * hasn't been fully initialized. We can test later to see if this is even
@@ -77,7 +84,7 @@ open class Player(world: World) : Pawn(world) {
     var lastIndex = -1
 
     /**
-     * A flag which indicates the player is attempting to log out. There can be
+     * A flag which indicates the player is attempting to bait out. There can be
      * certain circumstances where the player should not be unregistered from
      * the world.
      *
@@ -169,7 +176,7 @@ open class Player(world: World) : Pawn(world) {
     /**
      * GPI tile hash multipliers.
      *
-     * The player synchronization task will send [Tile.x] and [Tile.z] as 13-bit
+     * The player synchronization task will send [Tile.x] and [Tile.y] as 13-bit
      * values, which is 2^13 (8192). To send a player position higher than said
      * value in either direction, we must also send a multiplier.
      */
@@ -188,6 +195,8 @@ open class Player(world: World) : Pawn(world) {
     var skullIcon = -1
 
     var runEnergy = 100.0
+
+    var hitpoints = getCurrentHp()
 
     /**
      * The current combat level. This must be set externally by a login plugin
@@ -236,6 +245,23 @@ open class Player(world: World) : Pawn(world) {
         val bits = world.playerUpdateBlocks.updateBlocks[block]!!
         return blockBuffer.hasBit(bits.bit)
     }
+/*
+    fun forceMove(movement: ForcedMovement) {
+        blockBuffer.forceMovement = movement
+        addBlock(UpdateBlockType.FORCE_MOVEMENT)
+    }
+
+    suspend fun forceMove(task: QueueTask, movement: ForcedMovement, cycleDuration: Int = movement.maxDuration / 30) {
+        movementQueue.clear()
+        lock = LockState.DELAY_ACTIONS
+
+        moveTo(movement.finalDestination)
+
+        forceMove(movement)
+
+        task.wait(cycleDuration)
+        lock = LockState.NONE
+    }*/
 
     /**
      * Logic that should be executed every game cycle, before
@@ -277,13 +303,7 @@ open class Player(world: World) : Pawn(world) {
             }
         }
 
-        val oldRegion = lastTile?.regionId ?: -1
-        if (oldRegion != tile.regionId) {
-            if (oldRegion != -1) {
-                world.plugins.executeRegionExit(this, oldRegion)
-            }
-            world.plugins.executeRegionEnter(this, tile.regionId)
-        }
+
 
         containers.values.forEach { container ->
             if (container.dirty) {
@@ -300,6 +320,14 @@ open class Player(world: World) : Pawn(world) {
                 triggerEvent(ShopContainerUpdateEvent(items))
             }
             shopDirty = false
+        }
+
+        if (calculateWeight) {
+            calculateWeight()
+        }
+
+        if (calculateBonuses) {
+            calculateBonuses()
         }
 
         if (timers.isNotEmpty) {
@@ -336,6 +364,7 @@ open class Player(world: World) : Pawn(world) {
      * conditions if any logic may modify other [Pawn]s.
      */
     fun postCycle() {
+        updateLastTile()
         /*
          * Flush the channel at the end.
          */
@@ -348,10 +377,10 @@ open class Player(world: World) : Pawn(world) {
     fun register(): Boolean = world.register(this)
 
     /**
-     * Handles any logic that should be executed upon log in.
+     * Handles any logic that should be executed upon bait in.
      */
     fun login() {
-        if (entityType.isHumanControlled()) {
+        if (entityType.isHumanControlled) {
             gpiLocalPlayers[index] = this
             gpiLocalIndexes[gpiLocalCount++] = index
 
@@ -379,8 +408,8 @@ open class Player(world: World) : Pawn(world) {
     }
 
     /**
-     * Requests for this player to log out. However, the player may not be able
-     * to log out immediately under certain circumstances.
+     * Requests for this player to bait out. However, the player may not be able
+     * to bait out immediately under certain circumstances.
      */
     fun requestLogout() {
         pendingLogout = true
@@ -390,7 +419,7 @@ open class Player(world: World) : Pawn(world) {
     /**
      * Handles the logic that must be executed once a player has successfully
      * logged out. This means all the prerequisites have been met for the player
-     * to log out of the [world].
+     * to bait out of the [world].
      *
      * The [Client] implementation overrides this method and will handle saving
      * data for the player and call this super method at the end.
@@ -510,7 +539,7 @@ open class Player(world: World) : Pawn(world) {
     /**
      * Write a [MessageGameMessage] to the client.
      */
-    fun message(message: String) {
+    internal fun writeMessage(message: String) {
         write(MessageGameMessage(type = 0, message = message, username = null))
     }
 

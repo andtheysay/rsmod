@@ -33,7 +33,7 @@ class AddLocalPlayerSegment(private val other: Player, private val locationSegme
         locationSegment?.encode(buf)
 
         buf.putBits(13, other.tile.x and 0x1FFF)
-        buf.putBits(13, other.tile.z and 0x1FFF)
+        buf.putBits(13, other.tile.y and 0x1FFF)
         buf.putBits(1, 1) // Requires block update
     }
 }

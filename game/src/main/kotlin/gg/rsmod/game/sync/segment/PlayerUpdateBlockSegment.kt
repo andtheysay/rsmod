@@ -95,16 +95,16 @@ class PlayerUpdateBlockSegment(val other: Player, private val newPlayer: Boolean
             UpdateBlockType.MOVEMENT -> {
                 val structure = blocks.updateBlocks[blockType]!!.values
                 buf.put(structure[0].type, structure[0].order, structure[0].transformation,
-                        if (other.teleport) 127 else if (other.steps?.runDirection != null) 2 else 1)
+                        if (other.blockBuffer.teleport) 127 else if (other.steps?.runDirection != null) 2 else 1)
             }
 
             UpdateBlockType.FACE_TILE -> {
                 val structure = blocks.updateBlocks[blockType]!!.values
                 if (forceFace != null) {
                     val srcX = other.tile.x * 64
-                    val srcZ = other.tile.z * 64
+                    val srcZ = other.tile.y * 64
                     val dstX = forceFace.x * 64
-                    val dstZ = forceFace.z * 64
+                    val dstZ = forceFace.y * 64
                     val degreesX = (srcX - dstX).toDouble()
                     val degreesZ = (srcZ - dstZ).toDouble()
                     buf.put(structure[0].type, structure[0].order, structure[0].transformation, (Math.atan2(degreesX, degreesZ) * 325.949).toInt() and 0x7ff)
@@ -277,6 +277,17 @@ class PlayerUpdateBlockSegment(val other: Player, private val newPlayer: Boolean
                 val structure = blocks.updateBlocks[blockType]!!.values
                 buf.put(structure[0].type, structure[0].order, structure[0].transformation, other.blockBuffer.graphicId)
                 buf.put(structure[1].type, structure[1].order, structure[1].transformation, (other.blockBuffer.graphicHeight shl 16) or other.blockBuffer.graphicDelay)
+            }
+
+            UpdateBlockType.FORCE_MOVEMENT -> {
+                val structure = blocks.updateBlocks[blockType]!!.values
+                buf.put(structure[0].type, structure[0].order, structure[0].transformation, other.blockBuffer.forceMovement.diffX1)
+                buf.put(structure[1].type, structure[1].order, structure[1].transformation, other.blockBuffer.forceMovement.diffZ1)
+                buf.put(structure[2].type, structure[2].order, structure[2].transformation, other.blockBuffer.forceMovement.diffX2)
+                buf.put(structure[3].type, structure[3].order, structure[3].transformation, other.blockBuffer.forceMovement.diffZ2)
+                buf.put(structure[4].type, structure[4].order, structure[4].transformation, other.blockBuffer.forceMovement.clientDuration1)
+                buf.put(structure[5].type, structure[5].order, structure[5].transformation, other.blockBuffer.forceMovement.clientDuration2)
+                buf.put(structure[6].type, structure[6].order, structure[6].transformation, other.blockBuffer.forceMovement.directionAngle)
             }
 
             else -> throw RuntimeException("Unhandled update block type: $blockType")

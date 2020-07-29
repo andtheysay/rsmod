@@ -3,6 +3,7 @@ package gg.rsmod.game.action
 import gg.rsmod.game.fs.def.ObjectDef
 import gg.rsmod.game.message.impl.SetMapFlagMessage
 import gg.rsmod.game.model.Direction
+import gg.rsmod.game.model.MovementQueue
 import gg.rsmod.game.model.attr.INTERACTING_ITEM
 import gg.rsmod.game.model.attr.INTERACTING_OBJ_ATTR
 import gg.rsmod.game.model.attr.INTERACTING_OPT_ATTR
@@ -47,9 +48,9 @@ object ObjectPathAction {
             } else {
                 player.faceTile(obj.tile)
                 when {
-                    player.timers.has(FROZEN_TIMER) -> player.message(Entity.MAGIC_STOPS_YOU_FROM_MOVING)
-                    player.timers.has(STUN_TIMER) -> player.message(Entity.YOURE_STUNNED)
-                    else -> player.message(Entity.YOU_CANT_REACH_THAT)
+                    player.timers.has(FROZEN_TIMER) -> player.writeMessage(Entity.MAGIC_STOPS_YOU_FROM_MOVING)
+                    player.timers.has(STUN_TIMER) -> player.writeMessage(Entity.YOURE_STUNNED)
+                    else -> player.writeMessage(Entity.YOU_CANT_REACH_THAT)
                 }
                 player.write(SetMapFlagMessage(255, 255))
             }
@@ -65,9 +66,9 @@ object ObjectPathAction {
 
         walk(player, obj, lineOfSightRange) {
             if (!player.world.plugins.executeItemOnObject(player, obj.getTransform(player), item.id)) {
-                player.message(Entity.NOTHING_INTERESTING_HAPPENS)
+                player.writeMessage(Entity.NOTHING_INTERESTING_HAPPENS)
                 if (player.world.devContext.debugObjects) {
-                    player.message("Unhandled item on object: [item=$item, id=${obj.id}, type=${obj.type}, rot=${obj.rot}, x=${obj.tile.x}, z=${obj.tile.z}]")
+                    player.writeMessage("Unhandled item on object: [item=$item, id=${obj.id}, type=${obj.type}, rot=${obj.rot}, x=${obj.tile.x}, z=${obj.tile.y}]")
                 }
             }
         }
@@ -82,9 +83,9 @@ object ObjectPathAction {
 
         walk(player, obj, lineOfSightRange) {
             if (!player.world.plugins.executeObject(player, obj.getTransform(player), opt!!)) {
-                player.message(Entity.NOTHING_INTERESTING_HAPPENS)
+                player.writeMessage(Entity.NOTHING_INTERESTING_HAPPENS)
                 if (player.world.devContext.debugObjects) {
-                    player.message("Unhandled object action: [opt=$opt, id=${obj.id}, type=${obj.type}, rot=${obj.rot}, x=${obj.tile.x}, z=${obj.tile.z}]")
+                    player.writeMessage("Unhandled object action: [opt=$opt, id=${obj.id}, type=${obj.type}, rot=${obj.rot}, x=${obj.tile.x}, z=${obj.tile.y}]")
                 }
             }
         }
@@ -171,7 +172,7 @@ object ObjectPathAction {
              */
             if (pawn.tile.isWithinRadius(tile, 1)) {
                 val dir = Direction.between(tile, pawn.tile)
-                if (dir !in blockedWallDirections && (diagonal || !AabbUtil.areDiagonal(pawn.tile.x, pawn.tile.z, pawn.getSize(), pawn.getSize(), tile.x, tile.z, width, length))) {
+                if (dir !in blockedWallDirections && (diagonal || !AabbUtil.areDiagonal(pawn.tile.x, pawn.tile.y, pawn.getSize(), pawn.getSize(), tile.x, tile.y, width, length))) {
                     return Route(ArrayDeque(), success = true, tail = pawn.tile)
                 }
             }
@@ -214,7 +215,7 @@ object ObjectPathAction {
             return Route(ArrayDeque(), success = false, tail = pawn.tile)
         }
 
-        pawn.walkPath(route.path)
+        pawn.walkPath(route.path, MovementQueue.StepType.NORMAL, detectCollision = true)
 
         val last = pawn.movementQueue.peekLast()
         while (last != null && !pawn.tile.sameAs(last) && !pawn.timers.has(FROZEN_TIMER) && !pawn.timers.has(STUN_TIMER) && pawn.lock.canMove()) {

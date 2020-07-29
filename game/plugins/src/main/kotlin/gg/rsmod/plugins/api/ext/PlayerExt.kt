@@ -4,6 +4,7 @@ import com.google.common.primitives.Ints
 import gg.rsmod.game.fs.def.ItemDef
 import gg.rsmod.game.fs.def.VarbitDef
 import gg.rsmod.game.message.impl.*
+import gg.rsmod.game.model.Tile
 import gg.rsmod.game.model.World
 import gg.rsmod.game.model.attr.CURRENT_SHOP_ATTR
 import gg.rsmod.game.model.attr.PROTECT_ITEM_ATTR
@@ -11,12 +12,14 @@ import gg.rsmod.game.model.bits.BitStorage
 import gg.rsmod.game.model.bits.StorageBits
 import gg.rsmod.game.model.container.ContainerStackType
 import gg.rsmod.game.model.container.ItemContainer
+import gg.rsmod.game.model.entity.Pawn
 import gg.rsmod.game.model.entity.Player
 import gg.rsmod.game.model.interf.DisplayMode
 import gg.rsmod.game.model.item.Item
 import gg.rsmod.game.model.timer.SKULL_ICON_DURATION_TIMER
 import gg.rsmod.game.sync.block.UpdateBlockType
 import gg.rsmod.plugins.api.*
+import gg.rsmod.plugins.content.mechanics.multi.MultiData
 import gg.rsmod.plugins.service.marketvalue.ItemMarketValueService
 import gg.rsmod.util.BitManipulation
 
@@ -49,8 +52,8 @@ fun Player.openShop(shop: String) {
     }
 }
 
-fun Player.message(message: String, type: ChatMessageType = ChatMessageType.CONSOLE) {
-    write(MessageGameMessage(type = type.id, message = message, username = null))
+fun Player.message(message: String, type: ChatMessageType = ChatMessageType.CONSOLE, username: String? = null) {
+    write(MessageGameMessage(type = type.id, message = message, username = username))
 }
 
 fun Player.filterableMessage(message: String) {
@@ -118,6 +121,9 @@ fun Player.openInterface(interfaceId: Int, dest: InterfaceDestination, fullscree
     if (displayMode == DisplayMode.FULLSCREEN) {
         openOverlayInterface(displayMode)
     }
+    println("parent = ${parent}")
+    println("child = ${child}")
+    println("interfaceId = ${interfaceId}")
     openInterface(parent, child, interfaceId, if (dest.clickThrough) 1 else 0, isModal = dest == InterfaceDestination.MAIN_SCREEN)
 }
 
@@ -234,6 +240,7 @@ fun Player.openOverlayInterface(displayMode: DisplayMode) {
     }
     val component = getDisplayComponentId(displayMode)
     interfaces.setVisible(parent = getDisplayComponentId(displayMode), child = 0, visible = true)
+    println("component = ${component}")
     write(IfOpenTopMessage(component))
 }
 
@@ -387,6 +394,8 @@ fun Player.hasSpellbook(book: Spellbook): Boolean = getVarbit(4070) == book.id
 
 fun Player.getSpellbook(): Spellbook = Spellbook.values.first { getVarbit(4070) == it.id }
 
+fun Player.setSpellbook(book: Spellbook) = setVarbit(4070, book.id)
+
 fun Player.getWeaponType(): Int = getVarbit(357)
 
 fun Player.getAttackStyle(): Int = getVarp(43)
@@ -424,7 +433,7 @@ fun Player.sendWorldMapTile() {
 }
 
 fun Player.sendCombatLevelText() {
-    setComponentText(593, 2, "Combat Lvl: $combatLevel")
+    setComponentText(593, 3, "Combat Lvl: $combatLevel")
 }
 
 fun Player.sendWeaponComponentInformation() {
@@ -466,6 +475,7 @@ fun Player.calculateAndSetCombatLevel(): Boolean {
     if (changed) {
         runClientScript(389, combatLevel)
         sendCombatLevelText()
+        addBlock(UpdateBlockType.APPEARANCE)
         return true
     }
 
@@ -507,7 +517,7 @@ fun Player.calculateDeathContainers(): DeathContainers {
 
 // Note: this does not take ground items, that may belong to the player, into
 // account.
-fun Player.hasItem(item: Int, amount: Int = 1): ItemContainer? = containers.values.firstOrNull { container -> container.getItemCount(item) >= amount }
+fun Player.hasItem(item: Int, amount: Int = 1): Boolean = containers.values.firstOrNull { container -> container.getItemCount(item) >= amount } != null
 
 fun Player.isPrivilegeEligible(to: String): Boolean = world.privileges.isEligible(privilege, to)
 
@@ -518,3 +528,19 @@ fun Player.getRangedStrengthBonus(): Int = equipmentBonuses[11]
 fun Player.getMagicDamageBonus(): Int = equipmentBonuses[12]
 
 fun Player.getPrayerBonus(): Int = equipmentBonuses[13]
+
+fun Player.setHintArrow(pawn: Pawn) {
+    val type = if(pawn is Player) 1 else 10
+    write(SetHintArrowMessage(type, pawn, null))
+}
+
+fun Player.setHintArrow(tile: Tile, offset: ArrowOffsetType = ArrowOffsetType.CENTER) {
+    val type = when(offset) {
+        ArrowOffsetType.CENTER -> 2
+        ArrowOffsetType.NORTHWEST -> 3
+        ArrowOffsetType.SOUTHWEST -> 4
+        ArrowOffsetType.NORTHEAST -> 5
+        ArrowOffsetType.SOUTHEAST -> 6
+    }
+    write(SetHintArrowMessage(type, null, tile))
+}

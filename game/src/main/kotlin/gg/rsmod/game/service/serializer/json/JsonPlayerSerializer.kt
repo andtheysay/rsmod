@@ -4,9 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import gg.rsmod.game.Server
-import gg.rsmod.game.model.PlayerUID
-import gg.rsmod.game.model.Tile
-import gg.rsmod.game.model.World
+import gg.rsmod.game.model.*
 import gg.rsmod.game.model.attr.AttributeKey
 import gg.rsmod.game.model.container.ItemContainer
 import gg.rsmod.game.model.entity.Client
@@ -83,7 +81,9 @@ class JsonPlayerSerializer : PlayerSerializerService() {
             client.tile = Tile(data.x, data.z, data.height)
             client.privilege = world.privileges.get(data.privilege) ?: Privilege.DEFAULT
             client.runEnergy = data.runEnergy
+            client.xpRate = data.XpRate
             client.interfaces.displayMode = DisplayMode.values.firstOrNull { it.id == data.displayMode } ?: DisplayMode.FIXED
+            client.appearance = Appearance(data.appearance.looks, data.appearance.colors, Gender.values.firstOrNull { it.id == data.appearance.gender } ?: Gender.MALE)
             data.skills.forEach { skill ->
                 client.getSkills().setXp(skill.skill, skill.xp)
                 client.getSkills().setCurrentLevel(skill.skill, skill.lvl)
@@ -102,7 +102,7 @@ class JsonPlayerSerializer : PlayerSerializerService() {
                     container[slot] = item
                 }
             }
-            data.attributes.forEach { key, value ->
+            data.attributes.forEach { (key, value) ->
                 val attribute = AttributeKey<Any>(key)
                 client.attr[attribute] = if (value is Double) value.toInt() else value
             }
@@ -129,10 +129,12 @@ class JsonPlayerSerializer : PlayerSerializerService() {
 
     override fun saveClientData(client: Client): Boolean {
         val data = JsonPlayerSaveData(passwordHash = client.passwordHash, username = client.loginUsername, previousXteas = client.currentXteaKeys,
-                displayName = client.username, x = client.tile.x, z = client.tile.z, height = client.tile.height,
+                displayName = client.username, x = client.tile.x, z = client.tile.y, height = client.tile.z,
                 privilege = client.privilege.id, runEnergy = client.runEnergy, displayMode = client.interfaces.displayMode.id,
-                skills = getSkills(client), itemContainers = getContainers(client), attributes = client.attr.toPersistentMap(),
-                timers = client.timers.toPersistentTimers(), varps = client.varps.getAll().filter { it.state != 0 })
+                appearance = client.getPersistentAppearance(), XpRate = client.xpRate,
+                skills = client.getPersistentSkills(), itemContainers = client.getPersistentContainers(),
+                attributes = client.attr.toPersistentMap(), timers = client.timers.toPersistentTimers(),
+                varps = client.varps.getAll().filter { it.state != 0 })
         val writer = Files.newBufferedWriter(path.resolve(client.loginUsername))
         val json = GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create()
         json.toJson(data, writer)
@@ -140,30 +142,36 @@ class JsonPlayerSerializer : PlayerSerializerService() {
         return true
     }
 
-    private fun getContainers(client: Client): List<PersistentContainer> {
-        val containers = mutableListOf<PersistentContainer>()
+    private fun Client.getPersistentContainers(): List<PersistentContainer> {
+        val persistent = mutableListOf<PersistentContainer>()
 
-        client.containers.forEach { key, container ->
+        containers.forEach { (key, container) ->
             if (!container.isEmpty) {
-                containers.add(PersistentContainer(key.name, container.toMap()))
+                persistent.add(PersistentContainer(key.name, container.toMap()))
             }
         }
 
-        return containers
+        return persistent
     }
 
-    private fun getSkills(client: Client): List<PersistentSkill> {
+    private fun Client.getPersistentSkills(): List<PersistentSkill> {
         val skills = mutableListOf<PersistentSkill>()
 
-        for (i in 0 until client.getSkills().maxSkills) {
-            val xp = client.getSkills().getCurrentXp(i)
-            val lvl = client.getSkills().getCurrentLevel(i)
+        for (i in 0 until getSkills().maxSkills) {
+            val xp = getSkills().getCurrentXp(i)
+            val lvl = getSkills().getCurrentLevel(i)
 
             skills.add(PersistentSkill(skill = i, xp = xp, lvl = lvl))
         }
 
         return skills
     }
+
+    private fun Client.getPersistentAppearance(): PersistentAppearance = PersistentAppearance(appearance.gender.id, appearance.looks, appearance.colors)
+
+    data class PersistentAppearance(@JsonProperty("gender") val gender: Int,
+                                    @JsonProperty("looks") val looks: IntArray,
+                                    @JsonProperty("colors") val colors: IntArray)
 
     data class PersistentContainer(@JsonProperty("name") val name: String,
                                    @JsonProperty("items") val items: Map<Int, Item>)

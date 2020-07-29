@@ -27,7 +27,7 @@ class OpPlayer2Handler : MessageHandler<OpPlayer2Message> {
 
         val other = world.players[index] ?: return
 
-        if (other.options[optionIndex] == null || other == client) {
+        if (client.options[optionIndex] == null || other == client) {
             return
         }
 
@@ -39,6 +39,8 @@ class OpPlayer2Handler : MessageHandler<OpPlayer2Message> {
 
         client.attr[INTERACTING_PLAYER_ATTR] = WeakReference(other)
         client.attr[INTERACTING_OPT_ATTR] = option
-        client.executePlugin(PawnPathAction.walkPlugin)
+
+        client.attack(other)
+        //client.executePlugin(PawnPathAction.walkPlugin)
     }
 }

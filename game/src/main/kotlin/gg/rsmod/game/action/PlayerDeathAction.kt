@@ -18,7 +18,11 @@ object PlayerDeathAction {
 
     val deathPlugin: Plugin.() -> Unit = {
         val player = ctx as Player
+
+        player.interruptQueues()
+        player.stopMovement()
         player.lock()
+
         player.queue(TaskPriority.STRONG) {
             death(player)
         }
@@ -51,8 +55,11 @@ object PlayerDeathAction {
             player.moveTo(instancedMap.exitTile)
             world.instanceAllocator.death(player)
         }
-        player.message("Oh dear, you are dead!")
+        player.writeMessage("Oh dear, you are dead!")
         player.unlock()
+
+        player.attr.removeIf { it.resetOnDeath }
+        player.timers.removeIf { it.resetOnDeath }
 
         world.plugins.executePlayerDeath(player)
     }

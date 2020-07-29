@@ -59,6 +59,21 @@ enum class Direction(val orientationValue: Int, val playerWalkValue: Int, val np
         else -> throw IllegalArgumentException("Must provide a diagonal direction.")
     }
 
+    val angle: Int
+        get() {
+            return when (this) {
+                SOUTH -> 0
+                SOUTH_WEST -> 256
+                WEST -> 512
+                NORTH_WEST -> 768
+                NORTH -> 1024
+                NORTH_EAST -> 1280
+                EAST -> 1536
+                SOUTH_EAST -> 1792
+                NONE -> throw IllegalStateException("Invalid direction: $this")
+            }
+        }
+
     companion object {
 
         val NESW = arrayOf(NORTH, EAST, SOUTH, WEST)
@@ -69,13 +84,13 @@ enum class Direction(val orientationValue: Int, val playerWalkValue: Int, val np
 
         val RS_ORDER = arrayOf(WEST, EAST, NORTH, SOUTH, SOUTH_WEST, SOUTH_EAST, NORTH_WEST, NORTH_EAST)
 
-        private val ANGLED_ORDER = arrayOf(NORTH, NORTH_EAST, EAST, SOUTH_EAST, SOUTH, SOUTH_WEST, WEST, NORTH_WEST)
+        val ANGLED_ORDER = arrayOf(NORTH, NORTH_EAST, EAST, SOUTH_EAST, SOUTH, SOUTH_WEST, WEST, NORTH_WEST)
 
         fun getForAngle(angle: Int): Direction = ANGLED_ORDER[angle / 45]
 
         fun between(current: Tile, next: Tile): Direction {
             val deltaX = next.x - current.x
-            val deltaZ = next.z - current.z
+            val deltaZ = next.y - current.y
 
             return fromDeltas(deltaX, deltaZ)
         }

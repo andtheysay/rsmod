@@ -14,7 +14,7 @@ class AddLocalNpcSegment(val player: Player, val npc: Npc, private val requiresB
 
     override fun encode(buf: GamePacketBuilder) {
         var dx = npc.tile.x - player.tile.x
-        var dz = npc.tile.z - player.tile.z
+        var dz = npc.tile.y - player.tile.y
         if (!largeScene) {
             if (dx < Player.NORMAL_VIEW_DISTANCE) {
                 dx += 32
@@ -35,11 +35,12 @@ class AddLocalNpcSegment(val player: Player, val npc: Npc, private val requiresB
         val facing = if (npc.lastFacingDirection != Direction.NONE) npc.lastFacingDirection else Direction.SOUTH
 
         buf.putBits(15, npc.index)
-        buf.putBits(if (largeScene) 8 else 5, dx)
-        buf.putBits(1, if (requiresBlockUpdate) 1 else 0)
         buf.putBits(3, facing.npcWalkValue)
         buf.putBits(1, if (requiresBlockUpdate) 1 else 0)
-        buf.putBits(if (largeScene) 8 else 5, dz)
+        buf.putBits(1, if (requiresBlockUpdate) 1 else 0)
         buf.putBits(14, id)
+        buf.putBits(if (largeScene) 8 else 5, dz)
+        buf.putBits(if (largeScene) 8 else 5, dx)
+
     }
 }

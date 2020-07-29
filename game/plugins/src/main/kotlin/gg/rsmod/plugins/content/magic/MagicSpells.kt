@@ -7,10 +7,12 @@ import gg.rsmod.game.model.entity.Player
 import gg.rsmod.game.model.item.Item
 import gg.rsmod.game.plugin.KotlinPlugin
 import gg.rsmod.game.plugin.Plugin
+import gg.rsmod.plugins.api.EquipmentType
 import gg.rsmod.plugins.api.Skills
 import gg.rsmod.plugins.api.cfg.Items
 import gg.rsmod.plugins.api.ext.getSpellbook
 import gg.rsmod.plugins.api.ext.getVarbit
+import gg.rsmod.plugins.api.ext.message
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap
 
 /**

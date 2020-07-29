@@ -50,7 +50,7 @@ object Combat {
 
     fun postAttack(pawn: Pawn, target: Pawn) {
         pawn.timers[ATTACK_DELAY] = CombatConfigs.getAttackDelay(pawn)
-        target.timers[ACTIVE_COMBAT_TIMER] = 17 // 10,2 seconds
+        target.timers[ACTIVE_COMBAT_TIMER] = 15 // 9 seconds
         pawn.attr[BOLT_ENCHANTMENT_EFFECT] = false
 
         pawn.attr[LAST_HIT_ATTR] = WeakReference(target)
@@ -69,19 +69,23 @@ object Combat {
 
     fun postDamage(pawn: Pawn, target: Pawn) {
         if (target.isDead()) {
+            pawn.timers[ACTIVE_COMBAT_TIMER] = 0
             return
         }
 
         val blockAnimation = CombatConfigs.getBlockAnimation(target)
         target.animate(blockAnimation)
 
-        if (target.entityType.isNpc()) {
-            if (!target.attr.has(COMBAT_TARGET_FOCUS_ATTR) || target.attr[COMBAT_TARGET_FOCUS_ATTR]!!.get() != pawn) {
-                target.attack(pawn)
-            }
-        } else if (target is Player) {
-            if (target.getVarp(AttackTab.DISABLE_AUTO_RETALIATE_VARP) == 0 && target.getCombatTarget() != pawn) {
-                target.attack(pawn)
+        if (target.lock.canAttack()) {
+            if (target.entityType.isNpc) {
+                if (!target.attr.has(COMBAT_TARGET_FOCUS_ATTR) || target.attr[COMBAT_TARGET_FOCUS_ATTR]!!.get() != pawn) {
+                    target.attack(pawn)
+                }
+            } else if (target is Player) {
+                if ((target.getVarp(AttackTab.DISABLE_AUTO_RETALIATE_VARP) == 0 && target.getCombatTarget() != pawn)
+                        || (target.getVarp(AttackTab.DISABLE_AUTO_RETALIATE_VARP) == 1 && target.getCombatTarget() == pawn)) {
+                    target.attack(pawn)
+                }
             }
         }
     }
@@ -113,8 +117,8 @@ object Combat {
         val srcSize = pawn.getSize()
         val dstSize = Math.max(distance, target.getSize())
 
-        val touching = if (distance > 1) areOverlapping(start.x, start.z, srcSize, srcSize, end.x, end.z, dstSize, dstSize)
-                        else areBordering(start.x, start.z, srcSize, srcSize, end.x, end.z, dstSize, dstSize)
+        val touching = if (distance > 1) areOverlapping(start.x, start.y, srcSize, srcSize, end.x, end.y, dstSize, dstSize)
+                        else areBordering(start.x, start.y, srcSize, srcSize, end.x, end.y, dstSize, dstSize)
         val withinRange = touching && world.collision.raycast(start, end, projectile = projectile)
         return withinRange || PawnPathAction.walkTo(it, pawn, target, interactionRange = distance, lineOfSight = false)
     }
@@ -143,7 +147,7 @@ object Combat {
             return false
         }
 
-        val pvp = pawn.entityType.isPlayer() && target.entityType.isPlayer()
+        val pvp = pawn.entityType.isPlayer && target.entityType.isPlayer
 
         if (pawn is Player) {
             if (!pawn.isOnline) {
@@ -161,6 +165,16 @@ object Combat {
             }
         } else if (pawn is Npc) {
             if (!pawn.isSpawned()) {
+                return false
+            }
+        }
+        if(!target.isInMulti()) {
+            if (pawn.isBeingAttacked() && pawn.getLastHitByAttr() != target) {
+                (pawn as? Player)?.message("I'm already under attack.")
+                return false
+            } else if (target.isBeingAttacked() && target.getLastHitByAttr() != pawn) {
+                if (target.entityType.isNpc) (pawn as? Player)?.message("Someone else is fighting that.")
+                else if (target is Player) (pawn as? Player)?.message("Someone else is already fighting ${target.username}.")
                 return false
             }
         }
@@ -185,13 +199,38 @@ object Combat {
             if (!target.lock.canBeAttacked()) {
                 return false
             }
-        }
 
-        if (pvp) {
-            // TODO: must be within combat lvl range
-            // TODO: make sure they're in wildy or in dangerous minigame
+            if (pvp) {
+                pawn as Player
+
+                if (!inPvpArea(pawn)) {
+                    pawn.message("You can't attack players here.")
+                    return false
+                }
+
+                if (!inPvpArea(target)) {
+                    pawn.message("You can't attack ${target.username} there.")
+                    return false
+                }
+
+
+                val combatLvlRange = getValidCombatLvlRange(pawn)
+                if (target.combatLevel !in combatLvlRange) {
+                    pawn.message("You can't attack ${target.username} - your level different is too great.")
+                    return false
+                }
+            }
         }
         return true
+    }
+
+    private fun inPvpArea(player: Player): Boolean = player.inWilderness()
+
+    private fun getValidCombatLvlRange(player: Player): IntRange {
+        val wildLvl = player.tile.getWildernessLevel()
+        val minLvl = Math.max(Skills.MIN_COMBAT_LVL, player.combatLevel - wildLvl)
+        val maxLvl = Math.min(Skills.MAX_COMBAT_LVL, player.combatLevel + wildLvl)
+        return minLvl..maxLvl
     }
 
     private fun getStrategy(combatClass: CombatClass): CombatStrategy = when (combatClass) {

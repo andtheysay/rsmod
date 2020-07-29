@@ -2,6 +2,7 @@ package gg.rsmod.plugins.content.combat.strategy
 
 import gg.rsmod.game.model.Tile
 import gg.rsmod.game.model.combat.AttackStyle
+import gg.rsmod.game.model.combat.PawnHit
 import gg.rsmod.game.model.combat.XpMode
 import gg.rsmod.game.model.entity.GroundItem
 import gg.rsmod.game.model.entity.Npc
@@ -11,17 +12,16 @@ import gg.rsmod.plugins.api.EquipmentType
 import gg.rsmod.plugins.api.Skills
 import gg.rsmod.plugins.api.WeaponType
 import gg.rsmod.plugins.api.cfg.Items
-import gg.rsmod.plugins.api.ext.getEquipment
-import gg.rsmod.plugins.api.ext.hasEquipped
-import gg.rsmod.plugins.api.ext.hasWeaponType
-import gg.rsmod.plugins.api.ext.hit
+import gg.rsmod.plugins.api.ext.*
 import gg.rsmod.plugins.content.combat.Combat
 import gg.rsmod.plugins.content.combat.CombatConfigs
 import gg.rsmod.plugins.content.combat.createProjectile
+import gg.rsmod.plugins.content.combat.dealHit
 import gg.rsmod.plugins.content.combat.formula.RangedCombatFormula
 import gg.rsmod.plugins.content.combat.strategy.ranged.RangedProjectile
 import gg.rsmod.plugins.content.combat.strategy.ranged.ammo.Darts
 import gg.rsmod.plugins.content.combat.strategy.ranged.ammo.Knives
+import gg.rsmod.plugins.content.combat.strategy.ranged.weapon.BallistaType
 import gg.rsmod.plugins.content.combat.strategy.ranged.weapon.BowType
 import gg.rsmod.plugins.content.combat.strategy.ranged.weapon.Bows
 import gg.rsmod.plugins.content.combat.strategy.ranged.weapon.CrossbowType
@@ -65,6 +65,13 @@ object RangedCombatStrategy : CombatStrategy {
             val weapon = pawn.getEquipment(EquipmentType.WEAPON)
             val ammo = pawn.getEquipment(EquipmentType.AMMO)
 
+            val ballista = BallistaType.values.firstOrNull { it.item == weapon?.id }
+            if (ballista != null && ammo?.id !in ballista.ammo) {
+                val message = if (ammo != null) "You can't use that ammo with your ballista." else "There is no ammo left in your quiver."
+                pawn.message(message)
+                return false
+            }
+
             val crossbow = CrossbowType.values.firstOrNull { it.item == weapon?.id }
             if (crossbow != null && ammo?.id !in crossbow.ammo) {
                 val message = if (ammo != null) "You can't use that ammo with your crossbow." else "There is no ammo left in your quiver."
@@ -86,13 +93,13 @@ object RangedCombatStrategy : CombatStrategy {
         val world = pawn.world
 
         val animation = CombatConfigs.getAttackAnimation(pawn)
+        val weaponSound = CombatConfigs.getAttackSound(pawn)
 
         /*
          * A list of actions that will be executed upon this hit dealing damage
          * to the [target].
          */
-        val hitActions = mutableListOf<Function0<Unit>>()
-        hitActions.add { Combat.postDamage(pawn, target) }
+        var ammoDropAction: ((PawnHit).() -> Unit) = {}
 
         if (pawn is Player) {
 
@@ -134,24 +141,26 @@ object RangedCombatStrategy : CombatStrategy {
                     pawn.equipment.remove(ammo.id, amount)
                 }
                 if (dropAmmo) {
-                    hitActions.add { world.spawn(GroundItem(ammo.id, amount, target.tile, pawn)) }
+                    ammoDropAction = { world.spawn(GroundItem(ammo.id, amount, target.tile, pawn)) }
                 }
             }
         }
         pawn.animate(animation)
+        if(pawn is Player)
+            pawn.playSound(weaponSound)
+        if(target is Player)
+            target.playSound(weaponSound)
 
         val formula = RangedCombatFormula
         val accuracy = formula.getAccuracy(pawn, target)
         val maxHit = formula.getMaxHit(pawn, target)
         val landHit = accuracy >= world.randomDouble()
-        val damage = if (landHit) world.random(maxHit) else 0
+        val hitDelay = getHitDelay(pawn.getCentreTile(), target.tile.transform(target.getSize() / 2, target.getSize() / 2))
+        val damage = pawn.dealHit(target = target, maxHit = maxHit, landHit = landHit, delay = hitDelay, onHit = ammoDropAction).hit.hitmarks.sumBy { it.damage }
 
-        if (damage > 0 && pawn.entityType.isPlayer()) {
+        if (damage > 0 && pawn.entityType.isPlayer) {
             addCombatXp(pawn as Player, target, damage)
         }
-
-        target.hit(damage = damage, delay = getHitDelay(pawn.getCentreTile(), target.tile.transform(target.getSize() / 2, target.getSize() / 2)))
-                .addActions(hitActions).setCancelIf { pawn.isDead() }
     }
 
     fun getHitDelay(start: Tile, target: Tile): Int {
@@ -160,7 +169,7 @@ object RangedCombatStrategy : CombatStrategy {
     }
 
     private fun addCombatXp(player: Player, target: Pawn, damage: Int) {
-        val modDamage = if (target.entityType.isNpc()) Math.min(target.getCurrentHp(), damage) else damage
+        val modDamage = if (target.entityType.isNpc) Math.min(target.getCurrentHp(), damage) else damage
         val mode = CombatConfigs.getXpMode(player)
         val multiplier = if (target is Npc) Combat.getNpcXpMultiplier(target) else 1.0
 

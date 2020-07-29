@@ -12,6 +12,7 @@ import gg.rsmod.game.model.World
 import gg.rsmod.game.model.combat.NpcCombatDef
 import gg.rsmod.game.model.container.ItemContainer
 import gg.rsmod.game.model.container.key.ContainerKey
+import gg.rsmod.game.model.droptable.NpcDropTableDef
 import gg.rsmod.game.model.entity.DynamicObject
 import gg.rsmod.game.model.entity.GroundItem
 import gg.rsmod.game.model.entity.Npc
@@ -32,7 +33,7 @@ import kotlin.script.experimental.annotations.KotlinScript
  */
 @KotlinScript(
         displayName = "Kotlin Plugin",
-        fileExtension = "kts",
+        fileExtension = "plugin.kts",
         compilationConfiguration = KotlinPluginConfiguration::class
 )
 abstract class KotlinPlugin(private val r: PluginRepository, val world: World, val server: Server) {
@@ -110,6 +111,11 @@ abstract class KotlinPlugin(private val r: PluginRepository, val world: World, v
         r.npcCombatDefs[npc] = def
     }
 
+    fun set_drop_table(npc: Int, def: NpcDropTableDef) {
+        check(!r.npcDropTableDefs.containsKey(npc)) { "Npc drop table defs have been previously set: $npc" }
+        r.npcDropTableDefs[npc] = def
+    }
+
     /**
      * Set the [NpcCombatDef] for npcs with [Npc.id] of [npc] and [others].
      */
@@ -176,7 +182,7 @@ abstract class KotlinPlugin(private val r: PluginRepository, val world: World, v
     fun on_item_option(item: Int, option: String, logic: (Plugin).() -> Unit) {
         val opt = option.toLowerCase()
         val def = world.definitions.get(ItemDef::class.java, item)
-        val slot = def.inventoryMenu.filterNotNull().indexOfFirst { it.toLowerCase() == opt }
+        val slot = def.inventoryMenu.indexOfFirst { it?.toLowerCase() == opt }
 
         check(slot != -1) { "Option \"$option\" not found for item $item [options=${def.inventoryMenu.filterNotNull().filter { it.isNotBlank() }}]" }
 
@@ -190,7 +196,7 @@ abstract class KotlinPlugin(private val r: PluginRepository, val world: World, v
     fun on_equipment_option(item: Int, option: String, logic: (Plugin).() -> Unit) {
         val opt = option.toLowerCase()
         val def = world.definitions.get(ItemDef::class.java, item)
-        val slot = def.equipmentMenu.filterNotNull().indexOfFirst { it.toLowerCase() == opt }
+        val slot = def.equipmentMenu.indexOfFirst { it?.toLowerCase() == opt }
 
         check(slot != -1) { "Option \"$option\" not found for item equipment $item [options=${def.equipmentMenu.filterNotNull().filter { it.isNotBlank() }}]" }
 
@@ -206,7 +212,7 @@ abstract class KotlinPlugin(private val r: PluginRepository, val world: World, v
     fun on_obj_option(obj: Int, option: String, lineOfSightDistance: Int = -1, logic: (Plugin).() -> Unit) {
         val opt = option.toLowerCase()
         val def = world.definitions.get(ObjectDef::class.java, obj)
-        val slot = def.options.filterNotNull().indexOfFirst { it.toLowerCase() == opt }
+        val slot = def.options.indexOfFirst { it?.toLowerCase() == opt }
 
         check(slot != -1) { "Option \"$option\" not found for object $obj [options=${def.options.filterNotNull().filter { it.isNotBlank() }}]" }
 
@@ -226,7 +232,7 @@ abstract class KotlinPlugin(private val r: PluginRepository, val world: World, v
     fun on_npc_option(npc: Int, option: String, lineOfSightDistance: Int = -1, logic: (Plugin).() -> Unit) {
         val opt = option.toLowerCase()
         val def = world.definitions.get(NpcDef::class.java, npc)
-        val slot = def.options.filterNotNull().indexOfFirst { it.toLowerCase() == opt }
+        val slot = def.options.indexOfFirst { it?.toLowerCase() == opt }
 
         check(slot != -1) { "Option \"$option\" not found for npc $npc [options=${def.options.filterNotNull().filter { it.isNotBlank() }}]" }
 
@@ -241,7 +247,7 @@ abstract class KotlinPlugin(private val r: PluginRepository, val world: World, v
     fun on_ground_item_option(item: Int, option: String, logic: (Plugin).() -> Unit) {
         val opt = option.toLowerCase()
         val def = world.definitions.get(ItemDef::class.java, item)
-        val slot = def.groundMenu.filterNotNull().indexOfFirst { it.toLowerCase() == opt }
+        val slot = def.groundMenu.indexOfFirst { it?.toLowerCase() == opt }
 
         check(slot != -1) { "Option \"$option\" not found for ground item $item [options=${def.groundMenu.filterNotNull().filter { it.isNotBlank() }}]" }
 
@@ -262,6 +268,11 @@ abstract class KotlinPlugin(private val r: PluginRepository, val world: World, v
      * Invoke [plugin] when [item1] is used on [item2] or vise-versa.
      */
     fun on_item_on_item(item1: Int, item2: Int, plugin: Plugin.() -> Unit) = r.bindItemOnItem(item1, item2, plugin)
+
+    /**
+     * Invoke [plugin] when [item] in inventory is used on [groundItem] on ground.
+     */
+    fun on_item_on_ground_item(item: Int, groundItem: Int, plugin: Plugin.() -> Unit) = r.bindItemOnGroundItem(item, groundItem, plugin)
 
     /**
      * Set the logic to execute when [gg.rsmod.game.message.impl.WindowStatusMessage]
@@ -371,6 +382,11 @@ abstract class KotlinPlugin(private val r: PluginRepository, val world: World, v
     fun on_spell_on_npc(parent: Int, child: Int, logic: (Plugin).() -> Unit) = r.bindSpellOnNpc(parent, child, logic)
 
     /**
+     * Invoke [logic] when [gg.rsmod.game.message.impl.OpPlayerTMessage] is handled.
+     */
+    fun on_spell_on_player(parent: Int, child: Int, logic: (Plugin).() -> Unit) = r.bindSpellOnPlayer(parent, child, logic)
+
+    /**
      * Invoke [logic] when [gg.rsmod.game.message.impl.IfOpenSubMessage] is handled.
      */
     fun on_interface_open(interfaceId: Int, logic: (Plugin).() -> Unit) = r.bindInterfaceOpen(interfaceId, logic)
@@ -416,6 +432,11 @@ abstract class KotlinPlugin(private val r: PluginRepository, val world: World, v
      * Invoke [logic] when an item is equipped onto equipment slot [equipSlot].
      */
     fun on_equip_to_slot(equipSlot: Int, logic: (Plugin).() -> Unit) = r.bindEquipSlot(equipSlot, logic)
+
+    /**
+     * Invoke [logic] when an item is un-equipped from equipment slot [equipSlot].
+     */
+    fun on_unequip_from_slot(equipSlot: Int, logic: (Plugin).() -> Unit) = r.bindUnequipSlot(equipSlot, logic)
 
     /**
      * Return true if [item] can be equipped, false if it can't.
@@ -487,6 +508,13 @@ abstract class KotlinPlugin(private val r: PluginRepository, val world: World, v
     fun on_ground_item_option(item: Int, option: Int, logic: (Plugin).() -> Unit) = r.bindGroundItem(item, option, logic)
 
     /**
+     * Set the condition of whether [item] can be picked up as a ground item.
+     *
+     * @return false if the item can not be picked up.
+     */
+    fun set_ground_item_condition(item: Int, plugin: Plugin.() -> Boolean) = r.setGroundItemPickupCondition(item, plugin)
+
+    /**
      * Invoke [plugin] when a spell is used on an item.
      */
     fun on_spell_on_item(fromInterface: Int, fromComponent: Int, toInterface: Int, toComponent: Int, plugin: Plugin.() -> Unit) = r.bindSpellOnItem((fromInterface shl 16) or fromComponent, (toInterface shl 16) or toComponent, plugin)
@@ -496,6 +524,13 @@ abstract class KotlinPlugin(private val r: PluginRepository, val world: World, v
      * option - return false otherwise.
      */
     fun can_drop_item(item: Int, plugin: (Plugin).() -> Boolean) = r.bindCanItemDrop(item, plugin)
+
+    /**
+     * Invoke [plugin] when [item] is used on [npc].
+     */
+    fun on_item_on_npc(item: Int, npc: Int, plugin: Plugin.() -> Unit) = r.bindItemOnNpc(npc = npc, item = item, plugin = plugin)
+
+    fun npc_drop_table(npc: Int, plugin: (Plugin).() -> HashMap<Int, Int>?) = r.bindNpcDropTable(npc = npc, plugin = plugin)
 
     companion object {
         private val METADATA_PATH = Paths.get("./plugins", "configs")

@@ -47,6 +47,7 @@ class MessageEncoderSet {
         put(UpdateInvPartialEncoder(), UpdateInvPartialMessage::class.java)
         put(UpdateZonePartialFollowsEncoder(), UpdateZonePartialFollowsMessage::class.java)
         put(LodAddChangeEncoder(), LocAddChangeMessage::class.java)
+        put(LoadFriendListEncoder(), LoadFriendListMessage::class.java)
         put(LocDelEncoder(), LocDelMessage::class.java)
         put(UpdateZonePartialEnclosedEncoder(), UpdateZonePartialEnclosedMessage::class.java)
         put(UpdateRunWeightEncoder(), UpdateRunWeightMessage::class.java)
@@ -59,6 +60,12 @@ class MessageEncoderSet {
         put(MidiSongEncoder(), MidiSongMessage::class.java)
         put(OnDialogAbortEncoder(), TriggerOnDialogAbortMessage::class.java)
         put(UpdateRebootTimerEncoder(), UpdateRebootTimerMessage::class.java)
+        put(CamLookAtEncoder(), CameraLookAtMessage::class.java)
+        put(CamMoveToEncoder(), CameraMoveToMessage::class.java)
+        put(CameraResetEncoder(), CameraResetMessage::class.java)
+        put(CameraShakeEncoder(), CameraShakeMessage::class.java)
+        put(MapAnimEncoder(), MapAnimMessage::class.java)
+        put(HintArrowEncoder(), SetHintArrowMessage::class.java)
     }
 
     private fun <T : Message> put(encoder: MessageEncoder<T>, message: Class<out T>) {

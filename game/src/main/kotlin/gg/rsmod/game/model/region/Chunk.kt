@@ -6,6 +6,7 @@ import gg.rsmod.game.model.Direction
 import gg.rsmod.game.model.EntityType
 import gg.rsmod.game.model.Tile
 import gg.rsmod.game.model.World
+import gg.rsmod.game.model.*
 import gg.rsmod.game.model.collision.CollisionMatrix
 import gg.rsmod.game.model.collision.CollisionUpdate
 import gg.rsmod.game.model.entity.*
@@ -73,15 +74,15 @@ class Chunk(val coords: ChunkCoords, val heights: Int) {
      */
     fun contains(tile: Tile): Boolean = coords == tile.chunkCoords
 
-    fun isBlocked(tile: Tile, direction: Direction, projectile: Boolean): Boolean = matrices[tile.height].isBlocked(tile.x % CHUNK_SIZE, tile.z % CHUNK_SIZE, direction, projectile)
+    fun isBlocked(tile: Tile, direction: Direction, projectile: Boolean): Boolean = matrices[tile.z].isBlocked(tile.x % CHUNK_SIZE, tile.y % CHUNK_SIZE, direction, projectile)
 
-    fun isClipped(tile: Tile): Boolean = matrices[tile.height].isClipped(tile.x % CHUNK_SIZE, tile.z % CHUNK_SIZE)
+    fun isClipped(tile: Tile): Boolean = matrices[tile.z].isClipped(tile.x % CHUNK_SIZE, tile.y % CHUNK_SIZE)
 
     fun addEntity(world: World, entity: Entity, tile: Tile) {
         /*
          * Objects will affect the collision map.
          */
-        if (entity.entityType.isObject()) {
+        if (entity.entityType.isObject) {
             world.collision.applyCollision(world.definitions, entity as GameObject, CollisionUpdate.Type.ADD)
         }
 
@@ -89,7 +90,7 @@ class Chunk(val coords: ChunkCoords, val heights: Int) {
          * Transient entities will <strong>not</strong> be registered to one of
          * our [Chunk]'s tiles.
          */
-        if (!entity.entityType.isTransient()) {
+        if (!entity.entityType.isTransient) {
             val list = entities[tile] ?: ObjectArrayList(1)
             list.add(entity)
             entities[tile] = list
@@ -111,7 +112,7 @@ class Chunk(val coords: ChunkCoords, val heights: Int) {
                  * players who are currently in the viewport, but will now be
                  * sent to players who enter the region later on.
                  */
-                if (!entity.entityType.isTransient()) {
+                if (!entity.entityType.isTransient) {
                     updates.add(update)
                 }
                 /*
@@ -127,13 +128,13 @@ class Chunk(val coords: ChunkCoords, val heights: Int) {
          * Transient entities do not get added to our [Chunk]'s tiles, so no use
          * in trying to remove it.
          */
-        check(!entity.entityType.isTransient()) { "Transient entities cannot be removed from chunks." }
+        check(!entity.entityType.isTransient) { "Transient entities cannot be removed from chunks." }
 
         /*
          * [EntityType]s that are considered objects will be removed from our
          * collision map.
          */
-        if (entity.entityType.isObject()) {
+        if (entity.entityType.isObject) {
             world.collision.applyCollision(world.definitions, entity as GameObject, CollisionUpdate.Type.REMOVE)
         }
 
@@ -193,7 +194,7 @@ class Chunk(val coords: ChunkCoords, val heights: Int) {
                     continue
                 }
                 val local = client.lastKnownRegionBase!!.toLocal(this.coords.toTile())
-                client.write(UpdateZonePartialFollowsMessage(local.x, local.z))
+                client.write(UpdateZonePartialFollowsMessage(local.x, local.y))
                 client.write(update.toMessage())
             }
         }
@@ -217,7 +218,7 @@ class Chunk(val coords: ChunkCoords, val heights: Int) {
 
         if (messages.isNotEmpty()) {
             val local = p.lastKnownRegionBase!!.toLocal(coords.toTile())
-            p.write(UpdateZonePartialEnclosedMessage(local.x, local.z, gameService.messageEncoders, gameService.messageStructures, *messages.toTypedArray()))
+            p.write(UpdateZonePartialEnclosedMessage(local.x, local.y, gameService.messageEncoders, gameService.messageStructures, *messages.toTypedArray()))
         }
     }
 
@@ -225,10 +226,10 @@ class Chunk(val coords: ChunkCoords, val heights: Int) {
      * Checks to see if player [p] is able to view [entity].
      */
     private fun canBeViewed(p: Player, entity: Entity): Boolean {
-        if (p.tile.height != entity.tile.height) {
+        if (p.tile.z != entity.tile.z) {
             return false
         }
-        if (entity.entityType.isGroundItem()) {
+        if (entity.entityType.isGroundItem) {
             val item = entity as GroundItem
             return item.isPublic() || item.isOwnedBy(p)
         }
@@ -250,6 +251,10 @@ class Chunk(val coords: ChunkCoords, val heights: Int) {
 
         EntityType.AREA_SOUND ->
             if (spawn) SoundAreaUpdate(EntityUpdateType.PLAY_TILE_SOUND, entity as AreaSound)
+            else throw RuntimeException("${entity.entityType} can only be spawned, not removed!")
+
+        EntityType.MAP_ANIM ->
+            if (spawn) MapAnimUpdate(EntityUpdateType.MAP_ANIM, entity as TileGraphic)
             else throw RuntimeException("${entity.entityType} can only be spawned, not removed!")
 
         else -> null

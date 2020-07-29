@@ -45,13 +45,13 @@ object MeleeCombatFormula : CombatFormula {
         return accuracy
     }
 
-    override fun getMaxHit(pawn: Pawn, target: Pawn, specialAttackMultiplier: Double, specialPassiveMultiplier: Double): Int {
+    override fun getMaxHit(pawn: Pawn, target: Pawn, specialAttackMultiplier: Double, specialPassiveMultiplier: Double, ignore_protection: Boolean): Int {
         val a = if (pawn is Player) getEffectiveStrengthLevel(pawn) else if (pawn is Npc) getEffectiveStrengthLevel(pawn) else 0.0
         val b = getEquipmentStrengthBonus(pawn)
 
         var base = Math.floor(0.5 + a * (b + 64.0) / 640.0).toInt()
         if (pawn is Player) {
-            base = applyStrengthSpecials(pawn, target, base, specialAttackMultiplier, specialPassiveMultiplier)
+            base = applyStrengthSpecials(pawn, target, base, specialAttackMultiplier, specialPassiveMultiplier, ignore_protection)
         }
         return base
     }
@@ -76,7 +76,7 @@ object MeleeCombatFormula : CombatFormula {
         return maxRoll.toInt()
     }
 
-    private fun applyStrengthSpecials(player: Player, target: Pawn, base: Int, specialAttackMultiplier: Double, specialPassiveMultiplier: Double): Int {
+    private fun applyStrengthSpecials(player: Player, target: Pawn, base: Int, specialAttackMultiplier: Double, specialPassiveMultiplier: Double, ignore_protection: Boolean = false): Int {
         var hit = base.toDouble()
 
         hit *= getEquipmentMultiplier(player)
@@ -85,7 +85,7 @@ object MeleeCombatFormula : CombatFormula {
         hit *= specialAttackMultiplier
         hit = Math.floor(hit)
 
-        if (target.hasPrayerIcon(PrayerIcon.PROTECT_FROM_MELEE)) {
+        if (target.hasPrayerIcon(PrayerIcon.PROTECT_FROM_MELEE) && !ignore_protection) {
             hit *= 0.6
             hit = Math.floor(hit)
         }
@@ -295,35 +295,35 @@ object MeleeCombatFormula : CombatFormula {
     private fun getDamageTakeMultiplier(pawn: Pawn): Double = pawn.attr[Combat.DAMAGE_TAKE_MULTIPLIER] ?: 1.0
 
     private fun isDemon(pawn: Pawn): Boolean {
-        if (pawn.entityType.isNpc()) {
+        if (pawn.entityType.isNpc) {
             return (pawn as Npc).isSpecies(NpcSpecies.DEMON)
         }
         return false
     }
 
     private fun isShade(pawn: Pawn): Boolean {
-        if (pawn.entityType.isNpc()) {
+        if (pawn.entityType.isNpc) {
             return (pawn as Npc).isSpecies(NpcSpecies.SHADE)
         }
         return false
     }
 
     private fun isKalphite(pawn: Pawn): Boolean {
-        if (pawn.entityType.isNpc()) {
+        if (pawn.entityType.isNpc) {
             return (pawn as Npc).isSpecies(NpcSpecies.KALPHITE)
         }
         return false
     }
 
     private fun isScarab(pawn: Pawn): Boolean {
-        if (pawn.entityType.isNpc()) {
+        if (pawn.entityType.isNpc) {
             return (pawn as Npc).isSpecies(NpcSpecies.SCARAB)
         }
         return false
     }
 
     private fun isWearingDharok(pawn: Pawn): Boolean {
-        if (pawn.entityType.isPlayer()) {
+        if (pawn.entityType.isPlayer) {
             val player = pawn as Player
             return player.hasEquipped(EquipmentType.HEAD, Items.DHAROKS_HELM, Items.DHAROKS_HELM_25, Items.DHAROKS_HELM_50, Items.DHAROKS_HELM_75, Items.DHAROKS_HELM_100)
                     && player.hasEquipped(EquipmentType.WEAPON, Items.DHAROKS_GREATAXE, Items.DHAROKS_GREATAXE_25, Items.DHAROKS_GREATAXE_50, Items.DHAROKS_GREATAXE_75, Items.DHAROKS_GREATAXE_100)
@@ -334,7 +334,7 @@ object MeleeCombatFormula : CombatFormula {
     }
 
     private fun isWearingVerac(pawn: Pawn): Boolean {
-        if (pawn.entityType.isPlayer()) {
+        if (pawn.entityType.isPlayer) {
             val player = pawn as Player
             return player.hasEquipped(EquipmentType.HEAD, Items.VERACS_HELM, Items.VERACS_HELM_25, Items.VERACS_HELM_50, Items.VERACS_HELM_75, Items.VERACS_HELM_100)
                     && player.hasEquipped(EquipmentType.WEAPON, Items.VERACS_FLAIL, Items.VERACS_FLAIL_25, Items.VERACS_FLAIL_50, Items.VERACS_FLAIL_75, Items.VERACS_FLAIL_100)

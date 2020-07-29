@@ -6,14 +6,12 @@ import gg.rsmod.game.model.entity.Player
 import gg.rsmod.game.model.item.Item
 import gg.rsmod.plugins.api.InterfaceDestination
 import gg.rsmod.plugins.api.ext.*
+import gg.rsmod.plugins.content.inter.bank.BankTabs.insertionPoint
 
 /**
  * @author Tom <rspsmods@gmail.com>
  */
 object Bank {
-
-    const val TAB_COUNT = 9
-
     const val BANK_INTERFACE_ID = 12
     const val BANK_MAINTAB_COMPONENT = 13
     const val INV_INTERFACE_ID = 15
@@ -25,7 +23,6 @@ object Bank {
     const val LAST_X_INPUT = 3960
     const val QUANTITY_VARBIT = 6590
     const val SELECTED_TAB_VARBIT = 4150
-    const val TAB0_VARBIT = 4171
 
     /**
      * Visual varbit for the "Bank your loot" tab area interface when storing
@@ -88,6 +85,9 @@ object Bank {
         val from = p.inventory
         val to = p.bank
 
+        val oldFree = to.freeSlotCount
+        val curTab = p.getVarbit(SELECTED_TAB_VARBIT)
+
         val amount = Math.min(from.getItemCount(id), amt)
 
         var deposited = 0
@@ -113,6 +113,13 @@ object Bank {
 
             if (transfer != null) {
                 deposited += transfer.completed
+                if(placeholderSlot==-1 && curTab!=0 && oldFree!=to.freeSlotCount){ // shift newly add items to tab position
+                    var fromPos = to.getItemIndex(copy.id, false)
+                    fromPos = if(fromPos != -1) fromPos else to.nextFreeSlot-1
+                    val toPos = insertionPoint(p, curTab)
+                    to.insert(fromPos, toPos)
+                    p.setVarbit(4170+curTab, p.getVarbit(4170+curTab)+1)
+                }
             }
         }
 
@@ -148,22 +155,6 @@ object Bank {
             this[slot] = null
         }
         return slot
-    }
-
-    fun ItemContainer.shift() {
-        val newItems = Array<Item?>(capacity) { null }
-
-        var index = 0
-        for (i in 0 until capacity) {
-            val item = this[i] ?: continue
-            newItems[index++] = item
-        }
-
-        removeAll()
-
-        for (i in 0 until capacity) {
-            set(i, newItems[i])
-        }
     }
 
     fun ItemContainer.insert(from: Int, to: Int) {

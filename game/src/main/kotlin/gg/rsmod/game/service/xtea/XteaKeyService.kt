@@ -23,6 +23,9 @@ class XteaKeyService : Service {
 
     private val keys = Int2ObjectOpenHashMap<IntArray>()
 
+    val validRegions: IntArray
+        get() = keys.keys.toIntArray()
+
     override fun init(server: Server, world: World, serviceProperties: ServerProperties) {
         val path = Paths.get(serviceProperties.getOrDefault("path", "./data/xteas/"))
         if (!Files.exists(path)) {
@@ -49,13 +52,11 @@ class XteaKeyService : Service {
 
     fun get(region: Int): IntArray {
         if (keys[region] == null) {
-            logger.warn("No XTEA keys found for region {}.", region)
-            keys[region] = IntArray(4)
+            logger.trace { "No XTEA keys found for region $region." }
+            keys[region] = EMPTY_KEYS
         }
         return keys[region]!!
     }
-
-    fun getOrNull(region: Int): IntArray? = keys[region]
 
     private fun loadKeys(world: World) {
         /*
@@ -86,7 +87,7 @@ class XteaKeyService : Service {
              * If the XTEA is not found in our xteaService, we know the keys
              * are missing.
              */
-            if (getOrNull(regionId) == null) {
+            if (get(regionId).contentEquals(EMPTY_KEYS)) {
                 missingKeys.add(regionId)
             }
         }
@@ -144,5 +145,7 @@ class XteaKeyService : Service {
         }
     }
 
-    companion object : KLogging()
+    companion object : KLogging() {
+        val EMPTY_KEYS = intArrayOf(0, 0, 0, 0)
+    }
 }

@@ -13,6 +13,7 @@ import gg.rsmod.game.model.container.key.BANK_KEY
 import gg.rsmod.game.model.container.key.ContainerKey
 import gg.rsmod.game.model.container.key.EQUIPMENT_KEY
 import gg.rsmod.game.model.container.key.INVENTORY_KEY
+import gg.rsmod.game.model.droptable.NpcDropTableDef
 import gg.rsmod.game.model.entity.*
 import gg.rsmod.game.model.shop.Shop
 import gg.rsmod.game.model.timer.TimerKey
@@ -114,6 +115,12 @@ class PluginRepository(val world: World) {
     private val spellOnNpcPlugins = Int2ObjectOpenHashMap<Plugin.() -> Unit>()
 
     /**
+     * A map of plugins that will handle spells on players depending on the interface
+     * hash of the spell.
+     */
+    private val spellOnPlayerPlugins = Int2ObjectOpenHashMap<Plugin.() -> Unit>()
+
+    /**
      * A map that contains plugins that should be executed when the [TimerKey]
      * hits a value of [0] time left.
      */
@@ -156,6 +163,12 @@ class PluginRepository(val world: World) {
      * items from a certain equipment slot.
      */
     private val equipSlotPlugins: Multimap<Int, Plugin.() -> Unit> = HashMultimap.create()
+
+    /**
+     * A map of plugins that contain plugins that should execute when un-equipping
+     * items from a certain equipment slot.
+     */
+    private val unequipSlotPlugins: Multimap<Int, Plugin.() -> Unit> = HashMultimap.create()
 
     /**
      * A map of plugins that can stop an item from being equipped.
@@ -222,6 +235,12 @@ class PluginRepository(val world: World) {
     private val groundItemPlugins = Int2ObjectOpenHashMap<Int2ObjectOpenHashMap<Plugin.() -> Unit>>()
 
     /**
+     * A map that contains Boolean functions that will return false when a ground
+     * item can not be picked up.
+     */
+    private val groundItemPickupConditions = Int2ObjectOpenHashMap<Plugin.() -> Boolean>()
+
+    /**
      * A map of plugins that check if an item with the associated key, can be
      * dropped on the floor.
      */
@@ -248,6 +267,14 @@ class PluginRepository(val world: World) {
     private val itemOnItemPlugins = Int2ObjectOpenHashMap<Plugin.() -> Unit>()
 
     /**
+     * A map that contains item on ground item plugins.
+     *
+     * Key: (invItem << 16) | groundItem
+     * Value: plugin
+     */
+    private val itemOnGroundItemPlugins = Int2ObjectOpenHashMap<Plugin.() -> Unit>()
+
+    /**
      * A map that contains magic spell on item plugins.
      *
      * Key: (fromComponentHash << 32) | toComponentHash
@@ -260,6 +287,14 @@ class PluginRepository(val world: World) {
      * plugin logic, if any (would not be in the map if it doesn't have a plugin).
      */
     private val npcPlugins = Int2ObjectOpenHashMap<Int2ObjectOpenHashMap<Plugin.() -> Unit>>()
+
+    /**
+     * A map of plugins for item on npc logic.
+     *
+     * Key: (item << 16) | npcId
+     * Value: plugin
+     */
+    private val itemOnNpcPlugins = Int2ObjectOpenHashMap<Plugin.() -> Unit>()
 
     /**
      * A map that contains npc ids as the key and their interaction distance as
@@ -307,6 +342,12 @@ class PluginRepository(val world: World) {
     private val npcDeathPlugins = Int2ObjectOpenHashMap<Plugin.() -> Unit>()
 
     /**
+     * A list of plugin that will be invoked when an npc dies
+     * and invokes its drop table
+     */
+    private val npcDropsPlugins = Int2ObjectOpenHashMap<Plugin.() -> HashMap<Int, Int>?>()
+
+    /**
      * A map of plugins that occur when an [Event] is triggered.
      */
     private val eventPlugins = Object2ObjectOpenHashMap<Class<out Event>, MutableList<Plugin.(Event) -> Unit>>()
@@ -345,6 +386,9 @@ class PluginRepository(val world: World) {
      */
     internal val npcCombatDefs = Int2ObjectOpenHashMap<NpcCombatDef>()
 
+
+    internal val npcDropTableDefs = Int2ObjectOpenHashMap<NpcDropTableDef>()
+
     /**
      * Holds all valid shops set from plugins for this [PluginRepository].
      */
@@ -354,6 +398,16 @@ class PluginRepository(val world: World) {
      * A list of [Service]s that have been requested for loading by a [KotlinPlugin].
      */
     internal val services = mutableListOf<Service>()
+
+    /**
+     * A map of [Plugins] that are listening to start fishing bind
+     */
+    internal val onStartFishingPlugins = Int2ObjectOpenHashMap<Plugin.() -> Unit>()
+
+    /**
+     * A map of [Plugins] that are listening for fish to be caught.
+     */
+    internal val onCatchFishPlugins = Int2ObjectOpenHashMap<Plugin.() -> Unit>()
 
     /**
      * Holds all container keys set from plugins for this [PluginRepository].
@@ -577,13 +631,30 @@ class PluginRepository(val world: World) {
         spellOnNpcPlugins[hash] = plugin
         pluginCount++
     }
-
     fun executeSpellOnNpc(p: Player, parent: Int, child: Int): Boolean {
         val hash = (parent shl 16) or child
         val plugin = spellOnNpcPlugins[hash] ?: return false
         p.executePlugin(plugin)
         return true
     }
+
+    fun bindSpellOnPlayer(parent: Int, child: Int, plugin: Plugin.() -> Unit) {
+        val hash = (parent shl 16) or child
+        if (spellOnPlayerPlugins.containsKey(hash)) {
+            logger.error("Spell is already bound to a plugin: [$parent, $child]")
+            throw IllegalStateException("Spell is already bound to a plugin: [$parent, $child]")
+        }
+        spellOnPlayerPlugins[hash] = plugin
+        pluginCount++
+    }
+
+    fun executeSpellOnPlayer(p: Player, parent: Int, child: Int): Boolean {
+        val hash = (parent shl 16) or child
+        val plugin = spellOnPlayerPlugins[hash] ?: return false
+        p.executePlugin(plugin)
+        return true
+    }
+
 
     fun bindWindowStatus(plugin: Plugin.() -> Unit) {
         if (windowStatusPlugin != null) {
@@ -881,6 +952,20 @@ class PluginRepository(val world: World) {
         return false
     }
 
+    fun bindUnequipSlot(equipSlot: Int, plugin: Plugin.() -> Unit) {
+        unequipSlotPlugins.put(equipSlot, plugin)
+        pluginCount++
+    }
+
+    fun executeUnequipSlot(p: Player, equipSlot: Int): Boolean {
+        val plugin = unequipSlotPlugins[equipSlot]
+        if (plugin != null) {
+            plugin.forEach { logic -> p.executePlugin(logic) }
+            return true
+        }
+        return false
+    }
+
     fun bindEquipItemRequirement(item: Int, plugin: Plugin.() -> Boolean) {
         if (equipItemRequirementPlugins.containsKey(item)) {
             logger.error("Equip item requirement already bound to a plugin: [item=$item]")
@@ -1042,6 +1127,21 @@ class PluginRepository(val world: World) {
         return true
     }
 
+    fun setGroundItemPickupCondition(item: Int, plugin: Plugin.() -> Boolean) {
+        if (groundItemPickupConditions.containsKey(item)) {
+            val error = IllegalStateException("Ground item pick-up condition already set: $item")
+            logger.error(error) {}
+            throw error
+        }
+        groundItemPickupConditions[item] = plugin
+        pluginCount++
+    }
+
+    fun canPickupGroundItem(p: Player, item: Int): Boolean {
+        val plugin = groundItemPickupConditions[item] ?: return true
+        return p.executePlugin(plugin)
+    }
+
     fun bindCanItemDrop(item: Int, plugin: Plugin.() -> Boolean) {
         if (canDropItemPlugins.containsKey(item)) {
             logger.error("Item already bound to a 'can-drop' plugin: $item")
@@ -1083,7 +1183,7 @@ class PluginRepository(val world: World) {
     }
 
     fun bindItemOnItem(item1: Int, item2: Int, plugin: Plugin.() -> Unit) {
-        val max = Math.min(item1, item2)
+        val max = Math.max(item1, item2)
         val min = Math.min(item1, item2)
 
         val hash = (max shl 16) or min
@@ -1098,11 +1198,29 @@ class PluginRepository(val world: World) {
     }
 
     fun executeItemOnItem(p: Player, item1: Int, item2: Int): Boolean {
-        val max = Math.min(item1, item2)
+        val max = Math.max(item1, item2)
         val min = Math.min(item1, item2)
 
         val hash = (max shl 16) or min
         val plugin = itemOnItemPlugins[hash] ?: return false
+        p.executePlugin(plugin)
+        return true
+    }
+
+    fun bindItemOnGroundItem(invItem: Int, groundItem: Int, plugin: Plugin.() -> Unit) {
+        val hash = (invItem shl 16) or groundItem
+        if (itemOnGroundItemPlugins.containsKey(hash)) {
+            val error = IllegalStateException("Item on Item pair is already bound to a plugin: [inv_item=$invItem, ground_item=$groundItem]")
+            logger.error(error) {}
+            throw error
+        }
+        itemOnGroundItemPlugins[hash] = plugin
+        pluginCount++
+    }
+
+    fun executeItemOnGroundItem(p: Player, invItem: Int, groundItem: Int): Boolean {
+        val hash = (invItem shl 16) or groundItem
+        val plugin = itemOnGroundItemPlugins[hash] ?: return false
         p.executePlugin(plugin)
         return true
     }
@@ -1127,10 +1245,10 @@ class PluginRepository(val world: World) {
 
     fun bindObject(obj: Int, opt: Int, lineOfSightDistance: Int = -1, plugin: Plugin.() -> Unit) {
         val optMap = objectPlugins[obj] ?: Int2ObjectOpenHashMap(1)
-        if (optMap.containsKey(opt)) {
+        /*if (optMap.containsKey(opt)) {
             logger.error("Object is already bound to a plugin: $obj [opt=$opt]")
             throw IllegalStateException("Object is already bound to a plugin: $obj [opt=$opt]")
-        }
+        }*/
 
         if (lineOfSightDistance != -1) {
             objInteractionDistancePlugins[obj] = lineOfSightDistance
@@ -1171,6 +1289,24 @@ class PluginRepository(val world: World) {
         return true
     }
 
+    fun bindItemOnNpc(npc: Int, item: Int, plugin: Plugin.() -> Unit) {
+        val hash = (item shl 16) or npc
+        if (itemOnNpcPlugins.containsKey(hash)) {
+            val error = IllegalStateException("Item on npc is already bound to a plugin: npc=$npc, item=$item")
+            logger.error(error) {}
+            throw error
+        }
+        itemOnNpcPlugins[hash] = plugin
+        pluginCount++
+    }
+
+    fun executeItemOnNpc(p: Player, npc: Int, item: Int): Boolean {
+        val hash = (item shl 16) or npc
+        val plugin = itemOnNpcPlugins[hash] ?: return false
+        p.executePlugin(plugin)
+        return true
+    }
+
     fun bindGlobalGroundItemPickUp(plugin: Plugin.() -> Unit) {
         globalGroundItemPickUp.add(plugin)
     }
@@ -1179,6 +1315,52 @@ class PluginRepository(val world: World) {
         globalGroundItemPickUp.forEach { plugin ->
             p.executePlugin(plugin)
         }
+    }
+
+    fun bindNpcDropTable(npc: Int, plugin: Plugin.() -> HashMap<Int, Int>?) {
+        if (npcDropsPlugins.containsKey(npc)) {
+            val error = java.lang.IllegalStateException("Npc drop table is already bound to a plugin: npc=$npc")
+            logger.error(error) {}
+            throw error
+        }
+        npcDropsPlugins[npc] = plugin
+        pluginCount++
+    }
+
+    fun executeNpcDropTable(p: Pawn?, npc: Int): HashMap<Int, Int>? {
+        val plugin = npcDropsPlugins[npc] ?: return null
+        return p?.executePlugin(plugin)
+    }
+    fun bindOnStartFishing(npc_spot: Int, plugin: Plugin.() -> Unit) {
+        if(onStartFishingPlugins.containsKey(npc_spot)) {
+            val error = IllegalStateException("Start fishing listener already bound to a plugin: npc=$npc_spot")
+            logger.error(error) {}
+            throw error
+        }
+        onStartFishingPlugins[npc_spot] = plugin
+        pluginCount++
+    }
+
+    fun executeOnStartFishing(p: Player, npc_spot: Int): Boolean {
+        val plugin = onStartFishingPlugins[npc_spot] ?: return false
+        p.executePlugin(plugin)
+        return true
+    }
+
+    fun bindOnCatchFish(npc_spot: Int, plugin: Plugin.() -> Unit) {
+        if(onCatchFishPlugins.contains(npc_spot)) {
+            val error = IllegalStateException("Catch fish listener already bound to a plugin: npc=$npc_spot")
+            logger.error(error) {}
+            throw error
+        }
+        onCatchFishPlugins[npc_spot] = plugin
+        pluginCount++
+    }
+
+    fun executeOnCatchFish(p: Player, npc_spot: Int): Boolean {
+        val plugin = onCatchFishPlugins[npc_spot] ?: return false
+        p.executePlugin(plugin)
+        return true
     }
 
     companion object : KLogging()

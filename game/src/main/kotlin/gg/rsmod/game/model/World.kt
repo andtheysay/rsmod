@@ -10,15 +10,11 @@ import gg.rsmod.game.fs.def.NpcDef
 import gg.rsmod.game.fs.def.ObjectDef
 import gg.rsmod.game.message.impl.LogoutFullMessage
 import gg.rsmod.game.message.impl.UpdateRebootTimerMessage
+import gg.rsmod.game.model.attr.AttributeMap
 import gg.rsmod.game.model.collision.CollisionManager
 import gg.rsmod.game.model.combat.NpcCombatDef
-import gg.rsmod.game.model.entity.AreaSound
-import gg.rsmod.game.model.entity.GameObject
-import gg.rsmod.game.model.entity.GroundItem
-import gg.rsmod.game.model.entity.Npc
-import gg.rsmod.game.model.entity.Pawn
-import gg.rsmod.game.model.entity.Player
-import gg.rsmod.game.model.entity.Projectile
+import gg.rsmod.game.model.droptable.NpcDropTableDef
+import gg.rsmod.game.model.entity.*
 import gg.rsmod.game.model.instance.InstancedMapAllocator
 import gg.rsmod.game.model.priv.PrivilegeSet
 import gg.rsmod.game.model.queue.QueueTask
@@ -185,6 +181,13 @@ class World(val gameContext: GameContext, val devContext: DevContext) {
     val timers = TimerMap()
 
     /**
+     * World attributes.
+     *
+     * @see AttributeMap
+     */
+    val attr = AttributeMap()
+
+    /**
      * A local collection of [GroundItem]s that are currently spawned. We do
      * not use [ChunkSet]s to iterate through this as it takes quite a bit of
      * time to do so every cycle.
@@ -306,9 +309,12 @@ class World(val gameContext: GameContext, val devContext: DevContext) {
             val item = groundItemQueueIterator.next()
             item.currentCycle++
             if (item.currentCycle >= item.respawnCycles) {
-                item.currentCycle = 0
-                spawn(item)
-                groundItemQueueIterator.remove()
+                if (!item.isSpawned(this))
+                {
+                    item.currentCycle = 0
+                    spawn(item)
+                    groundItemQueueIterator.remove()
+                }
             }
         }
 
@@ -357,6 +363,7 @@ class World(val gameContext: GameContext, val devContext: DevContext) {
 
     fun unregister(p: Player) {
         players.remove(p)
+        chunks.get(p.tile)?.removeEntity(this, p, p.tile)
     }
 
     fun spawn(npc: Npc): Boolean {
@@ -370,6 +377,7 @@ class World(val gameContext: GameContext, val devContext: DevContext) {
 
     fun remove(npc: Npc) {
         npcs.remove(npc)
+        chunks.get(npc.tile)?.removeEntity(this, npc, npc.tile)
     }
 
     fun spawn(obj: GameObject) {
@@ -407,7 +415,7 @@ class World(val gameContext: GameContext, val devContext: DevContext) {
             }
         }
 
-        groundItems.add(item)
+        //groundItems.add(item)
         chunk.addEntity(this, item, tile)
     }
 
@@ -438,6 +446,13 @@ class World(val gameContext: GameContext, val devContext: DevContext) {
         chunk.addEntity(this, sound, tile)
     }
 
+    fun spawn(graphic: TileGraphic) {
+        val tile = graphic.tile
+        val chunk = chunks.getOrCreate(tile)
+
+        chunk.addEntity(this, graphic, tile)
+    }
+
     /**
      * Despawn entities in an area.
      */
@@ -462,6 +477,13 @@ class World(val gameContext: GameContext, val devContext: DevContext) {
     fun isSpawned(item: GroundItem): Boolean = chunks.getOrCreate(item.tile).getEntities<GroundItem>(item.tile, EntityType.GROUND_ITEM).contains(item)
 
     /**
+     * Get any [GroundItem] that matches the [predicate].
+     *
+     * @return null if no ground item meets the conditions of [predicate].
+     */
+    fun getGroundItem(predicate: (GroundItem) -> Boolean): GroundItem? = groundItems.firstOrNull { predicate(it) }
+
+    /**
      * Gets the [GameObject] that is located on [tile] and has a
      * [GameObject.type] equal to [type].
      *
@@ -473,7 +495,7 @@ class World(val gameContext: GameContext, val devContext: DevContext) {
     fun getPlayerForName(username: String): Player? {
         for (i in 0 until players.capacity) {
             val player = players[i] ?: continue
-            if (player.username == username) {
+            if (player.username.equals(username, ignoreCase = true)) {
                 return player
             }
         }
@@ -539,7 +561,7 @@ class World(val gameContext: GameContext, val devContext: DevContext) {
 
         if (examine != null) {
             val extension = if (devContext.debugExamines) " ($id)" else ""
-            p.message(examine + extension)
+            p.writeMessage(examine + extension)
         } else {
             logger.warn { "No examine info found for entity [$type, $id]" }
         }
@@ -548,6 +570,9 @@ class World(val gameContext: GameContext, val devContext: DevContext) {
     fun setNpcDefaults(npc: Npc) {
         val combatDef = plugins.npcCombatDefs.getOrDefault(npc.id, null) ?: NpcCombatDef.DEFAULT
         npc.combatDef = combatDef
+
+        val dropTableDef = plugins.npcDropTableDefs.getOrDefault(npc.id, null) ?: NpcDropTableDef.DEFAULT
+        npc.dropTables = dropTableDef
 
         npc.combatDef.bonuses.forEachIndexed { index, bonus -> npc.equipmentBonuses[index] = bonus }
         npc.respawns = combatDef.respawnDelay > 0

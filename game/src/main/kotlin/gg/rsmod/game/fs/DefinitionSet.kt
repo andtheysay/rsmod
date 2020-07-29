@@ -7,6 +7,7 @@ import gg.rsmod.game.model.World
 import gg.rsmod.game.model.collision.CollisionManager
 import gg.rsmod.game.model.collision.CollisionUpdate
 import gg.rsmod.game.model.entity.StaticObject
+import gg.rsmod.game.model.region.ChunkSet
 import gg.rsmod.game.service.xtea.XteaKeyService
 import io.netty.buffer.Unpooled
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap
@@ -79,6 +80,20 @@ class DefinitionSet {
         logger.info("Loaded ${getCount(ObjectDef::class.java)} object definitions.")
     }
 
+    fun loadRegions(world: World, chunks: ChunkSet, regions: IntArray) {
+        val start = System.currentTimeMillis()
+
+        var loaded = 0
+        regions.forEach { region ->
+            if (chunks.activeRegions.add(region)) {
+                if (createRegion(world, region)) {
+                    loaded++
+                }
+            }
+        }
+        logger.info { "Loaded $loaded regions in ${System.currentTimeMillis() - start}ms" }
+    }
+
     fun <T : Definition> load(store: Store, type: Class<out T>) {
         val configType: ConfigType = when (type) {
             VarpDef::class.java -> ConfigType.VARPLAYER
@@ -122,6 +137,12 @@ class DefinitionSet {
     }
 
     fun getCount(type: Class<*>) = defs[type]!!.size
+
+    @Suppress("UNCHECKED_CAST")
+    fun <T : Definition> forEach(type: Class<out T>, action: T.() -> Unit) {
+        val definitions = defs[type]!! as Map<Int, T>
+        definitions.values.forEach(action)
+    }
 
     @Suppress("UNCHECKED_CAST")
     fun <T : Definition> get(type: Class<out T>, id: Int): T {
@@ -206,7 +227,7 @@ class DefinitionSet {
             return true
         }
 
-        val keys = xteaService?.getOrNull(id) ?: return false
+        val keys = xteaService?.get(id) ?: XteaKeyService.EMPTY_KEYS
         try {
             val landData = landArchive.decompress(world.filestore.storage.loadArchive(landArchive), keys)
             val locDef = LocationsLoader().load(x, z, landData)

@@ -9,6 +9,7 @@ import gg.rsmod.game.model.skill.SkillSet
 import gg.rsmod.game.protocol.ClientChannelInitializer
 import gg.rsmod.game.service.GameService
 import gg.rsmod.game.service.rsa.RsaService
+import gg.rsmod.game.service.xtea.XteaKeyService
 import gg.rsmod.util.ServerProperties
 import io.netty.bootstrap.ServerBootstrap
 import io.netty.channel.ChannelOption
@@ -89,8 +90,8 @@ class Server {
          * Create a game context for our configurations and services to run.
          */
         val gameContext = GameContext(initialLaunch = initialLaunch,
-                name = gameProperties.get<String>("name")!!,
-                revision = gameProperties.get<Int>("revision")!!,
+                name  = gameProperties.get<String>("name")!!,
+                revision = 181,
                 cycleTime = gameProperties.getOrDefault("cycle-time", 600),
                 playerLimit = gameProperties.getOrDefault("max-players", 2048),
                 home = Tile(gameProperties.get<Int>("home-x")!!, gameProperties.get<Int>("home-z")!!, gameProperties.getOrDefault("home-height", 0)),
@@ -98,7 +99,8 @@ class Server {
                 npcStatCount = gameProperties.getOrDefault("npc-stat-count", Npc.Stats.DEFAULT_NPC_STAT_COUNT),
                 runEnergy = gameProperties.getOrDefault("run-energy", true),
                 gItemPublicDelay = gameProperties.getOrDefault("gitem-public-spawn-delay", GroundItem.DEFAULT_PUBLIC_SPAWN_CYCLES),
-                gItemDespawnDelay = gameProperties.getOrDefault("gitem-despawn-delay", GroundItem.DEFAULT_DESPAWN_CYCLES))
+                gItemDespawnDelay = gameProperties.getOrDefault("gitem-despawn-delay", GroundItem.DEFAULT_DESPAWN_CYCLES),
+                preloadMaps = gameProperties.getOrDefault("preload-maps", false))
 
         val devContext = DevContext(
                 debugExamines = devProperties.getOrDefault("debug-examines", false),
@@ -115,14 +117,27 @@ class Server {
         individualStopwatch.reset().start()
         world.filestore = Store(filestore.toFile())
         world.filestore.load()
-        world.definitions.loadAll(world.filestore)
         logger.info("Loaded filestore from path {} in {}ms.", filestore, individualStopwatch.elapsed(TimeUnit.MILLISECONDS))
+
+        /*
+         * Load the definitions.
+         */
+        world.definitions.loadAll(world.filestore)
 
         /*
          * Load the services required to run the server.
          */
         world.loadServices(this, gameProperties)
         world.init()
+
+        if (gameContext.preloadMaps) {
+            /*
+             * Preload region definitions.
+             */
+            world.getService(XteaKeyService::class.java)?.let { service ->
+                world.definitions.loadRegions(world, world.chunks, service.validRegions)
+            }
+        }
 
         /*
          * Load the packets for the game.

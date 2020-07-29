@@ -10,7 +10,7 @@ import io.netty.channel.ChannelFutureListener
 import io.netty.channel.ChannelHandlerContext
 import mu.KLogging
 import java.math.BigInteger
-import java.util.*
+import java.util.Arrays
 
 /**
  * @author Tom <rspsmods@gmail.com>
@@ -155,7 +155,11 @@ class LoginDecoder(private val serverRevision: Int, private val cacheCrcs: IntAr
 
             val crcs = IntArray(cacheCrcs.size) { xteaBuf.readInt() }
 
-            for (i in 0 until crcs.size) {
+            /**
+             * TODO: Sometime after revision 181, these CRCs are sent in varying order
+             * and endianness.
+             */
+            /*for (i in 0 until crcs.size) {
                 /**
                  * CRC for index 16 is always sent as 0 (at least on the
                  * Desktop client, need to look into mobile).
@@ -170,7 +174,7 @@ class LoginDecoder(private val serverRevision: Int, private val cacheCrcs: IntAr
                     ctx.writeResponse(LoginResultType.REVISION_MISMATCH)
                     return
                 }
-            }
+            }*/
 
             logger.info { "User '$username' login request from ${ctx.channel()}." }
 

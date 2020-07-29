@@ -13,10 +13,7 @@ object NpcPostSynchronizationTask : SynchronizationTask<Npc> {
         val oldTile = pawn.lastTile
         val moved = oldTile == null || !oldTile.sameAs(pawn.tile)
 
-        if (moved) {
-            pawn.lastTile = Tile(pawn.tile)
-        }
-        pawn.teleport = false
+        pawn.moved = false
         pawn.steps = null
         pawn.blockBuffer.clean()
     }
