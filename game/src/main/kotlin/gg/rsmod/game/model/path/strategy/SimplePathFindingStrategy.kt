@@ -40,7 +40,7 @@ class SimplePathFindingStrategy(collision: CollisionManager) : PathFindingStrate
             }
 
             var eastOrWest = if (tail.x < end.x) Direction.EAST else Direction.WEST
-            var northOrSouth = if (tail.z < end.z) Direction.NORTH else Direction.SOUTH
+            var northOrSouth = if (tail.y < end.y) Direction.NORTH else Direction.SOUTH
             var overlapped = false
 
             if (areOverlapping(tail, sourceWidth, end, targetWidth)) {
@@ -49,7 +49,7 @@ class SimplePathFindingStrategy(collision: CollisionManager) : PathFindingStrate
                 overlapped = true
             }
 
-            while ((!areCoordinatesInRange(tail.z, sourceLength, end.z, targetLength)
+            while ((!areCoordinatesInRange(tail.y, sourceLength, end.y, targetLength)
                             || areDiagonal(tail, sourceLength, end, targetLength)
                             || areOverlapping(tail, sourceLength, end, targetLength))
                     && (overlapped || !areOverlapping(tail.step(northOrSouth), sourceLength, end, targetLength))
@@ -83,11 +83,11 @@ class SimplePathFindingStrategy(collision: CollisionManager) : PathFindingStrate
         return true
     }
 
-    private fun areBordering(tile1: Tile, size1: Int, tile2: Tile, size2: Int): Boolean = AabbUtil.areBordering(tile1.x, tile1.z, size1, size1, tile2.x, tile2.z, size2, size2)
+    private fun areBordering(tile1: Tile, size1: Int, tile2: Tile, size2: Int): Boolean = AabbUtil.areBordering(tile1.x, tile1.y, size1, size1, tile2.x, tile2.y, size2, size2)
 
-    private fun areDiagonal(tile1: Tile, size1: Int, tile2: Tile, size2: Int): Boolean = AabbUtil.areDiagonal(tile1.x, tile1.z, size1, size1, tile2.x, tile2.z, size2, size2)
+    private fun areDiagonal(tile1: Tile, size1: Int, tile2: Tile, size2: Int): Boolean = AabbUtil.areDiagonal(tile1.x, tile1.y, size1, size1, tile2.x, tile2.y, size2, size2)
 
-    private fun areOverlapping(tile1: Tile, size1: Int, tile2: Tile, size2: Int): Boolean = AabbUtil.areOverlapping(tile1.x, tile1.z, size1, size1, tile2.x, tile2.z, size2, size2)
+    private fun areOverlapping(tile1: Tile, size1: Int, tile2: Tile, size2: Int): Boolean = AabbUtil.areOverlapping(tile1.x, tile1.y, size1, size1, tile2.x, tile2.y, size2, size2)
 
     private fun areCoordinatesInRange(coord1: Int, size1: Int, coord2: Int, size2: Int): Boolean {
         val a = Pair(coord1, coord1 + size1)

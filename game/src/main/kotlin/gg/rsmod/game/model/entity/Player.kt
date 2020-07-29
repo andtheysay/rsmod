@@ -160,7 +160,7 @@ open class Player(world: World) : Pawn(world) {
     /**
      * GPI tile hash multipliers.
      *
-     * The player synchronization task will send [Tile.x] and [Tile.z] as 13-bit
+     * The player synchronization task will send [Tile.x] and [Tile.y] as 13-bit
      * values, which is 2^13 (8192). To send a player position higher than said
      * value in either direction, we must also send a multiplier.
      */

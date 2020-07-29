@@ -34,7 +34,7 @@ class ClickMinimapHandler : MessageHandler<MoveMinimapClickMessage> {
         client.resetInteractions()
 
         if (message.movementType == 2 && world.privileges.isEligible(client.privilege, Privilege.ADMIN_POWER)) {
-            client.moveTo(message.x, message.z, client.tile.height)
+            client.moveTo(message.x, message.z, client.tile.z)
         } else {
             val stepType = if (message.movementType == 1) MovementQueue.StepType.FORCED_RUN else MovementQueue.StepType.NORMAL
             val noClip = client.attr[NO_CLIP_ATTR] ?: false

@@ -226,7 +226,7 @@ abstract class Pawn(val world: World) : Entity() {
         val granularity = 2048
         val lutFactor = (granularity / (Math.PI * 2)) // Lookup table factor
 
-        val theta = Math.atan2((target.z - centre.z).toDouble(), (target.x - centre.x).toDouble())
+        val theta = Math.atan2((target.y - centre.y).toDouble(), (target.x - centre.x).toDouble())
         var angle = Math.toDegrees((((theta * lutFactor).toInt() + offset) and (granularity - 1)) / lutFactor)
         if (angle < 0) {
             angle += 360
@@ -234,8 +234,8 @@ abstract class Pawn(val world: World) : Entity() {
         angle = Math.toRadians(angle)
 
         val tx = Math.round(centre.x + (size * Math.cos(angle))).toInt()
-        val tz = Math.round(centre.z + (size * Math.sin(angle))).toInt()
-        return Tile(tx, tz, tile.height)
+        val tz = Math.round(centre.y + (size * Math.sin(angle))).toInt()
+        return Tile(tx, tz, tile.z)
     }
 
     /**
@@ -414,17 +414,17 @@ abstract class Pawn(val world: World) : Entity() {
         }
 
         if (this is Player && lastKnownRegionBase != null) {
-            write(SetMapFlagMessage(tail.x - lastKnownRegionBase!!.x, tail.z - lastKnownRegionBase!!.z))
+            write(SetMapFlagMessage(tail.x - lastKnownRegionBase!!.x, tail.y - lastKnownRegionBase!!.z))
         }
     }
 
-    fun walkTo(tile: Tile, stepType: MovementQueue.StepType = MovementQueue.StepType.NORMAL, detectCollision: Boolean = true) = walkTo(tile.x, tile.z, stepType, detectCollision)
+    fun walkTo(tile: Tile, stepType: MovementQueue.StepType = MovementQueue.StepType.NORMAL, detectCollision: Boolean = true) = walkTo(tile.x, tile.y, stepType, detectCollision)
 
     fun walkTo(x: Int, z: Int, stepType: MovementQueue.StepType = MovementQueue.StepType.NORMAL, detectCollision: Boolean = true) {
         /*
          * Already standing on requested destination.
          */
-        if (tile.x == x && tile.z == z) {
+        if (tile.x == x && tile.y == z) {
             return
         }
 
@@ -462,13 +462,13 @@ abstract class Pawn(val world: World) : Entity() {
         }
     }
 
-    suspend fun walkTo(it: QueueTask, tile: Tile, stepType: MovementQueue.StepType = MovementQueue.StepType.NORMAL, detectCollision: Boolean = true) = walkTo(it, tile.x, tile.z, stepType, detectCollision)
+    suspend fun walkTo(it: QueueTask, tile: Tile, stepType: MovementQueue.StepType = MovementQueue.StepType.NORMAL, detectCollision: Boolean = true) = walkTo(it, tile.x, tile.y, stepType, detectCollision)
 
     suspend fun walkTo(it: QueueTask, x: Int, z: Int, stepType: MovementQueue.StepType = MovementQueue.StepType.NORMAL, detectCollision: Boolean = true): Route {
         /*
          * Already standing on requested destination.
          */
-        if (tile.x == x && tile.z == z) {
+        if (tile.x == x && tile.y == z) {
             return Route(EMPTY_TILE_DEQUE, success = true, tail = Tile(tile))
         }
         val multiThread = world.multiThreadPathFinding
@@ -500,7 +500,7 @@ abstract class Pawn(val world: World) : Entity() {
     }
 
     fun moveTo(tile: Tile) {
-        moveTo(tile.x, tile.z, tile.height)
+        moveTo(tile.x, tile.y, tile.z)
     }
 
     fun animate(id: Int, delay: Int = 0) {
@@ -528,9 +528,9 @@ abstract class Pawn(val world: World) : Entity() {
     fun faceTile(face: Tile, width: Int = 1, length: Int = 1) {
         if (entityType.isPlayer) {
             val srcX = tile.x * 64
-            val srcZ = tile.z * 64
+            val srcZ = tile.y * 64
             val dstX = face.x * 64
-            val dstZ = face.z * 64
+            val dstZ = face.y * 64
 
             var degreesX = (srcX - dstX).toDouble()
             var degreesZ = (srcZ - dstZ).toDouble()
@@ -541,7 +541,7 @@ abstract class Pawn(val world: World) : Entity() {
             blockBuffer.faceDegrees = (Math.atan2(degreesX, degreesZ) * 325.949).toInt() and 0x7ff
         } else if (entityType.isNpc) {
             val faceX = (face.x shl 1) + 1
-            val faceZ = (face.z shl 1) + 1
+            val faceZ = (face.y shl 1) + 1
             blockBuffer.faceDegrees = (faceX shl 16) or faceZ
         }
 
@@ -611,7 +611,7 @@ abstract class Pawn(val world: World) : Entity() {
 
     internal fun createPathFindingStrategy(copyChunks: Boolean = false): PathFindingStrategy {
         val collision: CollisionManager = if (copyChunks) {
-            val chunks = world.chunks.copyChunksWithinRadius(tile.chunkCoords, height = tile.height, radius = Chunk.CHUNK_VIEW_RADIUS)
+            val chunks = world.chunks.copyChunksWithinRadius(tile.chunkCoords, height = tile.z, radius = Chunk.CHUNK_VIEW_RADIUS)
             CollisionManager(chunks, createChunksIfNeeded = false)
         } else {
             world.collision

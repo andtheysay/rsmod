@@ -70,9 +70,9 @@ class Chunk(val coords: ChunkCoords, val heights: Int) {
      */
     fun contains(tile: Tile): Boolean = coords == tile.chunkCoords
 
-    fun isBlocked(tile: Tile, direction: Direction, projectile: Boolean): Boolean = matrices[tile.height].isBlocked(tile.x % CHUNK_SIZE, tile.z % CHUNK_SIZE, direction, projectile)
+    fun isBlocked(tile: Tile, direction: Direction, projectile: Boolean): Boolean = matrices[tile.z].isBlocked(tile.x % CHUNK_SIZE, tile.y % CHUNK_SIZE, direction, projectile)
 
-    fun isClipped(tile: Tile): Boolean = matrices[tile.height].isClipped(tile.x % CHUNK_SIZE, tile.z % CHUNK_SIZE)
+    fun isClipped(tile: Tile): Boolean = matrices[tile.z].isClipped(tile.x % CHUNK_SIZE, tile.y % CHUNK_SIZE)
 
     fun addEntity(world: World, entity: Entity, tile: Tile) {
         /*
@@ -190,7 +190,7 @@ class Chunk(val coords: ChunkCoords, val heights: Int) {
                     continue
                 }
                 val local = client.lastKnownRegionBase!!.toLocal(this.coords.toTile())
-                client.write(UpdateZonePartialFollowsMessage(local.x, local.z))
+                client.write(UpdateZonePartialFollowsMessage(local.x, local.y))
                 client.write(update.toMessage())
             }
         }
@@ -214,7 +214,7 @@ class Chunk(val coords: ChunkCoords, val heights: Int) {
 
         if (messages.isNotEmpty()) {
             val local = p.lastKnownRegionBase!!.toLocal(coords.toTile())
-            p.write(UpdateZonePartialEnclosedMessage(local.x, local.z, gameService.messageEncoders, gameService.messageStructures, *messages.toTypedArray()))
+            p.write(UpdateZonePartialEnclosedMessage(local.x, local.y, gameService.messageEncoders, gameService.messageStructures, *messages.toTypedArray()))
         }
     }
 
@@ -222,7 +222,7 @@ class Chunk(val coords: ChunkCoords, val heights: Int) {
      * Checks to see if player [p] is able to view [entity].
      */
     private fun canBeViewed(p: Player, entity: Entity): Boolean {
-        if (p.tile.height != entity.tile.height) {
+        if (p.tile.z != entity.tile.z) {
             return false
         }
         if (entity.entityType.isGroundItem) {

@@ -42,7 +42,7 @@ class OpLocUHandler : MessageHandler<OpLocUMessage> {
         }
 
         // If the tile is too far away, do nothing
-        val tile = Tile(message.x, message.z, client.tile.height)
+        val tile = Tile(message.x, message.z, client.tile.z)
         if (!tile.viewableFrom(client.tile, Player.TILE_VIEW_DISTANCE)) {
             return
         }

@@ -121,9 +121,9 @@ class BFSPathFindingStrategy(collision: CollisionManager) : PathFindingStrategy(
     private fun isTargetDirectionBlocked(node: Tile, end: Tile, targetWidth: Int, targetLength: Int,
                                          blockedDirection: Set<Direction>): Boolean {
         val x = node.x
-        val z = node.z
+        val z = node.y
         val dx = x - end.x
-        val dz = z - end.z
+        val dz = z - end.y
 
         val face = when {
             (dx == -1) -> Direction.EAST
@@ -139,9 +139,9 @@ class BFSPathFindingStrategy(collision: CollisionManager) : PathFindingStrategy(
     private fun isDirectionBlocked(node: Tile, end: Tile, targetWidth: Int, targetLength: Int,
                                    projectilePath: Boolean): Boolean {
         val x = node.x
-        val z = node.z
+        val z = node.y
         val dx = x - end.x
-        val dz = z - end.z
+        val dz = z - end.y
 
         val face = when {
             (dx == -1) -> Direction.EAST
@@ -156,9 +156,9 @@ class BFSPathFindingStrategy(collision: CollisionManager) : PathFindingStrategy(
 
     private fun isDiagonalTile(current: Tile, end: Tile, targetWidth: Int, targetLength: Int): Boolean {
         val curX = current.x
-        val curZ = current.z
+        val curZ = current.y
         val endX = end.x
-        val endZ = end.z
+        val endZ = end.y
 
         val southWest = curX == (endX - 1) && curZ == (endZ - 1)
         val southEast = curX == (endX + targetWidth) && curZ == (endZ - 1)
@@ -170,9 +170,9 @@ class BFSPathFindingStrategy(collision: CollisionManager) : PathFindingStrategy(
 
     private fun isTileOverlapping(tile: Tile, target: Tile, targetWidth: Int, targetLength: Int): Boolean {
         val curX = tile.x
-        val curZ = tile.z
+        val curZ = tile.y
         val endX = target.x
-        val endZ = target.z
+        val endZ = target.y
 
         return (curX >= endX && curX < endX + targetWidth && curZ >= endZ && curZ < endZ + targetLength)
     }

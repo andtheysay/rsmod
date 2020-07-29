@@ -308,9 +308,12 @@ class World(val gameContext: GameContext, val devContext: DevContext) {
             val item = groundItemQueueIterator.next()
             item.currentCycle++
             if (item.currentCycle >= item.respawnCycles) {
-                item.currentCycle = 0
-                spawn(item)
-                groundItemQueueIterator.remove()
+                if (!item.isSpawned(this))
+                {
+                    item.currentCycle = 0
+                    spawn(item)
+                    groundItemQueueIterator.remove()
+                }
             }
         }
 

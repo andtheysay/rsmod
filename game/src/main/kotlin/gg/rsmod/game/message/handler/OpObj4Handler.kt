@@ -23,7 +23,7 @@ class OpObj4Handler : MessageHandler<OpObj4Message> {
         /*
          * If tile is too far away, don't process it.
          */
-        val tile = Tile(message.x, message.z, client.tile.height)
+        val tile = Tile(message.x, message.z, client.tile.z)
         if (!tile.viewableFrom(client.tile, Player.TILE_VIEW_DISTANCE)) {
             return
         }

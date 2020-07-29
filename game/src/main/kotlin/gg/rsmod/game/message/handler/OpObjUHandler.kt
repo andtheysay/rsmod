@@ -22,7 +22,7 @@ class OpObjUHandler : MessageHandler<OpObjUMessage> {
         /*
          * If tile is too far away, don't process it.
          */
-        val tile = Tile(message.x, message.z, client.tile.height)
+        val tile = Tile(message.x, message.z, client.tile.z)
         if (!tile.viewableFrom(client.tile, Player.TILE_VIEW_DISTANCE)) {
             return
         }
@@ -41,7 +41,7 @@ class OpObjUHandler : MessageHandler<OpObjUMessage> {
         val groundItem = chunk.getEntities<GroundItem>(tile, EntityType.GROUND_ITEM).firstOrNull { it.item == message.groundItem && it.canBeViewedBy(client) } ?: return
 
         log(client, "Item on Ground Item action: item=[%d, %d], ground=[%d, %d], x=%d, z=%d, movement=%d",
-                item.id, item.amount, groundItem.item, groundItem.amount, tile.x, tile.z, message.movementType)
+                item.id, item.amount, groundItem.item, groundItem.amount, tile.x, tile.y, message.movementType)
 
         if (message.movementType == 1 && world.privileges.isEligible(client.privilege, Privilege.ADMIN_POWER)) {
             client.moveTo(groundItem.tile)
