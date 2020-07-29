@@ -1,6 +1,7 @@
 package gg.rsmod.plugins.api.ext
 
 import gg.rsmod.game.model.Direction
+import gg.rsmod.game.model.EntityType
 import gg.rsmod.game.model.Hit
 import gg.rsmod.game.model.attr.*
 import gg.rsmod.game.model.entity.*
@@ -110,4 +111,18 @@ fun Pawn.stepAway(){
             walkTo(tile.step(direction))
         }
     }
+/**
+ * Gets all pawns neighboring this [Pawn].
+ */
+fun Pawn.getNeighbourPawns(): Collection<Pawn> {
+    val neighbourPawns = mutableSetOf<Pawn>()
+
+    Direction.values().forEach { dir ->
+        val step = tile.step(dir)
+        val chunk = world.chunks.get(step) ?: return@forEach
+        val pawns = chunk.getEntities<Pawn>(step, EntityType.CLIENT, EntityType.PLAYER, EntityType.NPC)
+        neighbourPawns.addAll(pawns)
+    }
+
+    return neighbourPawns
 }
